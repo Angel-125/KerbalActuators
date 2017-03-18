@@ -1,0 +1,14 @@
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\KerbalActuators.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\KerbalActuators.pdb
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Assembly-CSharp-firstpass.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Assembly-CSharp.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\KSPAssets.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\UnityEngine.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\UnityEngine.UI.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\TrackIRUnity.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Mono.Cecil.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\TDx.TDxInput.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Mono.Security.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\UnityEngine.xml
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.pdb
