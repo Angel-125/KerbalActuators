@@ -62,8 +62,12 @@
     <Compile Include="Controllers\WBIRotationController.cs" />
     <Compile Include="AppButtons\WBIVTOLAppButton.cs" />
     <Compile Include="Managers\WBIVTOLManager.cs" />
+    <Compile Include="GUI\ServoGUI.cs" />
     <Compile Include="Utilities\Window.cs" />
     <Compile Include="Utilities\WindowUtils.cs" />
+    <Compile Include="GUI\WBIActuatorsGUIMgr.cs" />
+    <Compile Include="Managers\WBIServoManager.cs" />
+    <Compile Include="Controllers\WBIMagnetController.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

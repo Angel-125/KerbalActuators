@@ -18,7 +18,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace KerbalActuators
 {
-    public class WBIHoverController : PartModule
+    public interface IHoverController
+    {
+        bool IsEngineActive();
+        void StartEngine();
+        void StopEngine();
+        void UpdateHoverState(float throttleValue);
+        void SetHoverMode(bool isActive);
+        void SetVerticalSpeed(float verticalSpeed);
+        void KillVerticalSpeed();
+    }
+
+    public delegate void HoverUpdateEvent(bool hoverActive, float verticalSpeed);
+
+    public class WBIHoverController : PartModule, IHoverController
     {
         [KSPField]
         public float verticalSpeedIncrements = 1f;
@@ -32,7 +45,11 @@ namespace KerbalActuators
         [KSPField]
         public bool guiVisible = true;
 
+        public event HoverUpdateEvent onHoverUpdate;
         public ModuleEnginesFX engine;
+
+        protected MultiModeEngine engineSwitcher;
+        protected Dictionary<string, ModuleEnginesFX> multiModeEngines = new Dictionary<string, ModuleEnginesFX>();
 
         [KSPEvent(guiActive = true, guiName = "Toggle Hover")]
         public virtual void ToggleHoverMode()
@@ -59,19 +76,38 @@ namespace KerbalActuators
             }
         }
 
+        public virtual bool IsEngineActive()
+        {
+            getCurrentEngine();
+
+            return engine.isOperational;
+        }
+
         public virtual void StartEngine()
         {
+            getCurrentEngine();
+            if (engine == null)
+                return;
+
             engine.Activate();
         }
 
         public virtual void StopEngine()
         {
+            getCurrentEngine();
+            if (engine == null)
+                return;
+
             engine.Shutdown();
         }
 
-        public virtual void SetEngineThrottle(float throttleValue)
+        public virtual void UpdateHoverState(float throttleValue)
         {
-            engine.currentThrottle = throttleValue;
+            getCurrentEngine();
+            if (engine == null)
+                return;
+
+            engine.currentThrottle = throttleValue * engine.thrustPercentage / 100.0f;
         }
 
         public virtual void SetHoverMode(bool isActive)
@@ -87,7 +123,7 @@ namespace KerbalActuators
         [KSPEvent(guiActive = true, guiName = "Vertical Speed +")]
         public virtual void IncreaseVerticalSpeed()
         {
-            verticalSpeed += verticalSpeedIncrements;
+            SetVerticalSpeed(verticalSpeed + verticalSpeedIncrements);
             printSpeed();
             updateSymmetricalSpeeds();
         }
@@ -95,7 +131,7 @@ namespace KerbalActuators
         [KSPEvent(guiActive = true, guiName = "Vertical Speed -")]
         public virtual void DecreaseVerticalSpeed()
         {
-            verticalSpeed -= verticalSpeedIncrements;
+            SetVerticalSpeed(verticalSpeed + verticalSpeedIncrements);
             printSpeed();
             updateSymmetricalSpeeds();
         }
@@ -122,6 +158,9 @@ namespace KerbalActuators
         {
             //Just set the vertical speed, don't print the new speed or inform symmetry counterparts.
             this.verticalSpeed = verticalSpeed;
+
+            if (onHoverUpdate != null)
+                onHoverUpdate(hoverActive, verticalSpeed);
         }
 
         public virtual void KillVerticalSpeed()
@@ -133,7 +172,9 @@ namespace KerbalActuators
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
-            engine = this.part.FindModuleImplementing<ModuleEnginesFX>();
+
+            //Setup engine(s)
+            setupEngines();
 
             //Set hover state
             if (hoverActive)
@@ -170,6 +211,9 @@ namespace KerbalActuators
                 Fields["verticalSpeed"].guiActive = true;
                 ScreenMessages.PostScreenMessage(new ScreenMessage("Hover Mode On", 1f, ScreenMessageStyle.UPPER_CENTER));
             }
+
+            if (onHoverUpdate != null)
+                onHoverUpdate(hoverActive, verticalSpeed);
         }
 
         public virtual void DeactivateHover()
@@ -185,6 +229,39 @@ namespace KerbalActuators
                 Fields["verticalSpeed"].guiActive = false;
                 ScreenMessages.PostScreenMessage(new ScreenMessage("Hover Mode Off", 1f, ScreenMessageStyle.UPPER_CENTER));
             }
+
+            if (onHoverUpdate != null)
+                onHoverUpdate(hoverActive, verticalSpeed);
+        }
+
+        public void UpdateHoverState()
+        {
+        }
+
+        protected void getCurrentEngine()
+        {
+            //If we have multiple engines, make sure we have the current one.
+            if (engineSwitcher != null)
+                engine = multiModeEngines[engineSwitcher.engineName];
+        }
+
+        protected void setupEngines()
+        {
+            //See if we have multiple engines that we need to support
+            engineSwitcher = this.part.FindModuleImplementing<MultiModeEngine>();
+            if (engineSwitcher != null)
+            {
+                List<ModuleEnginesFX> engines = this.part.FindModulesImplementing<ModuleEnginesFX>();
+
+                foreach (ModuleEnginesFX multiEngine in engines)
+                    multiModeEngines.Add(multiEngine.engineID, multiEngine);
+
+                engine = multiModeEngines[engineSwitcher.engineName];
+                return;
+            }
+
+            //Normal case: we only have one engine to support
+            engine = this.part.FindModuleImplementing<ModuleEnginesFX>();
         }
 
         protected virtual void updateSymmetricalSpeeds()
@@ -195,7 +272,7 @@ namespace KerbalActuators
                 {
                     WBIHoverController hoverController = symmetryPart.GetComponent<WBIHoverController>();
                     if (hoverController != null)
-                        hoverController.verticalSpeed = this.verticalSpeed;
+                        hoverController.SetVerticalSpeed(this.verticalSpeed);
                 }
             }
         }

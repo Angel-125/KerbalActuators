@@ -35,7 +35,13 @@ using KSP.UI.Dialogs;
 
 namespace KerbalActuators
 {
-    public abstract class Window<T> : MonoBehaviour
+    public interface IManagedActuatorWindow
+    {
+        bool IsVisible();
+        void DrawWindow();
+    }
+
+    public abstract class Window<T> : MonoBehaviour, IManagedActuatorWindow
     {
         private int windowId;
         private string configNodeName;
@@ -209,7 +215,7 @@ namespace KerbalActuators
                 HandleWindowEvents(resizeRect);
             }
 
-            preventClickthrough();
+//            preventClickthrough();
 
             GUI.DragWindow();
         }

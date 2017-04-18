@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using KSP.IO;
+using System.Text.RegularExpressions;
 
 /*
-Source code copyright 2016, by Michael Billard (Angel-125)
+Source code copyright 2017, by Michael Billard (Angel-125)
 License: GNU General Public License Version 3
 License URL: http://www.gnu.org/licenses/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -22,14 +23,35 @@ namespace KerbalActuators
     {
         Locked,
         RotatingUp,
-        RotatingDown
+        RotatingDown,
+        Spinning,
+        SlowingDown
     }
 
     public delegate void RotatorMirroredEvent(bool isMirrored);
 
-    [KSPModule("Rotator")]
-    public class WBIRotationController : PartModule
+    public interface IRotationController
     {
+        string GetGroupID();
+        void DrawControls();
+        void HideGUI();
+        int GetPanelHeight();
+        ConfigNode TakeSnapshot();
+        void SetFromSnapshot(ConfigNode node);
+        bool IsMoving();
+        bool CanRotateMax();
+        bool CanRotateMin();
+        void RotateDown(float rotationDelta);
+        void RotateUp(float rotationDelta);
+        void RotateNeutral(bool applyToCounterparts = true);
+        void RotateMin(bool applyToCounterparts = true);
+        void RotateMax(bool applyToCounterparts = true);
+    }
+    
+    [KSPModule("Rotator")]
+    public class WBIRotationController : PartModule, IRotationController
+    {
+        const int kPanelHeight = 130;
         const string kRotating = "Rotating";
         const string kLocked = "Locked";
 
@@ -78,6 +100,9 @@ namespace KerbalActuators
         [KSPField]
         public float rotationDegPerSec = 15f;
 
+        [KSPField]
+        public bool canMirrorRotation = true;
+
         [KSPField(isPersistant = true)]
         public bool mirrorRotation;
 
@@ -102,6 +127,11 @@ namespace KerbalActuators
         protected Transform rotationTarget = null;
         protected Vector3 rotationVector;
         protected float degPerUpdate;
+        protected string targetAngleText = "";
+
+        Vector2 scrollVector = new Vector2();
+        GUILayoutOption[] panelOptions = new GUILayoutOption[] { GUILayout.Height(kPanelHeight) };
+        string degPerSecText = "15";
 
         [KSPEvent(guiActiveEditor = true)]
         public virtual void MirrorRotation()
@@ -135,6 +165,9 @@ namespace KerbalActuators
 
         public void RotateMin(bool applyToCounterparts = true)
         {
+            if (currentRotationAngle == minRotateAngle)
+                return;
+
             SetRotation(minRotateAngle);
             if (applyToCounterparts)
                 updateCounterparts();
@@ -154,6 +187,9 @@ namespace KerbalActuators
 
         public void RotateMax(bool applyToCounterparts = true)
         {
+            if (currentRotationAngle == maxRotateAngle)
+                return;
+
             SetRotation(maxRotateAngle);
             if (applyToCounterparts)
                 updateCounterparts();
@@ -171,8 +207,26 @@ namespace KerbalActuators
             RotateNeutral();
         }
 
+        public string GetGroupID()
+        {
+            return groupID;
+        }
+
+        public bool CanRotateMin()
+        {
+            return canRotateMin;
+        }
+
+        public bool CanRotateMax()
+        {
+            return canRotateMax;
+        }
+
         public void RotateNeutral(bool applyToCounterparts = true)
         {
+            if (currentRotationAngle == 0f)
+                return;
+
             SetRotation(0f);
             if (applyToCounterparts)
                 updateCounterparts();
@@ -180,8 +234,11 @@ namespace KerbalActuators
 
         public void SetRotation(float rotationAngle)
         {
+            if (rotationAngle == currentRotationAngle)
+                return;
+
             //Angles go from 0 to 360
-            rotationAngle = Mathf.Clamp(rotationAngle, 0, 360);
+            rotationAngle = rotationAngle % 360.0f;
             targetAngle = rotationAngle;
 
             //If we have no min/max limits, then just find the shortest path to the target angle.
@@ -195,7 +252,6 @@ namespace KerbalActuators
                 //Update state
                 rotationStateInt = (int)rotationState;
                 state = kRotating;
-
                 return;
             }
 
@@ -209,26 +265,23 @@ namespace KerbalActuators
 
             //We're at 0, we going to 90: rotate up
             if (targetAngle > currentRotationAngle && targetAngle <= maxRotateAngle)
+            {
                 rotationState = ERotationStates.RotatingUp;
+            }
 
             //We're at 0, we going to 270: rotate down
             else if (targetAngle > currentRotationAngle && targetAngle <= minRotateAngle)
-                rotationState = ERotationStates.RotatingDown;
-
-            //We're at 270, we going to 90: rotate up
-            //Or we're at 90 and going to 0: find shortest route
-            else if (targetAngle < currentRotationAngle && targetAngle <= maxRotateAngle)
             {
-                //Find shortest route
+                rotationState = ERotationStates.RotatingDown;
+            }
+
+            else
+            {
                 if ((targetAngle - currentRotationAngle + 360f) % 360f <= 180f)
                     rotationState = ERotationStates.RotatingUp;
                 else
                     rotationState = ERotationStates.RotatingDown;
             }
-
-            //Rotate down
-            else
-                rotationState = ERotationStates.RotatingDown;
 
             //Update state
             rotationStateInt = (int)rotationState;
@@ -237,9 +290,13 @@ namespace KerbalActuators
 
         public void RotateUp(float rotationDelta)
         {
-            targetAngle += rotationDelta % 360f;
+            targetAngle += rotationDelta;
+            targetAngle = targetAngle % 360.0f;
 
-            if (targetAngle >= maxRotateAngle)
+            //Make sure the new target angle is in bounds: between minRotateAngle and maxRotateAngle.
+            if (targetAngle > maxRotateAngle && targetAngle < minRotateAngle)
+                targetAngle = maxRotateAngle;
+            else if (targetAngle > maxRotateAngle && minRotateAngle == 0f)
                 targetAngle = maxRotateAngle;
 
             if (currentRotationAngle == targetAngle)
@@ -254,16 +311,25 @@ namespace KerbalActuators
                 return;
 
             targetAngle -= rotationDelta;
-
             if (targetAngle < 0f)
-                targetAngle = 360f - targetAngle;
-            if (targetAngle <= minRotateAngle)
+                targetAngle = 360f - Mathf.Abs(targetAngle);
+
+            //Make sure the new target angle is in bounds: between minRotateAngle and maxRotateAngle.
+            if (targetAngle > maxRotateAngle && targetAngle < minRotateAngle)
                 targetAngle = minRotateAngle;
 
             if (currentRotationAngle == targetAngle)
                 return;
 
             SetRotation(targetAngle);
+        }
+
+        public void SetDegreesPerSec(float degPerSec)
+        {
+            rotationDegPerSec = degPerSec;
+
+            //Calculate degrees per update
+            degPerUpdate = rotationDegPerSec * TimeWarp.fixedDeltaTime;
         }
 
         protected void updateCounterparts()
@@ -286,6 +352,7 @@ namespace KerbalActuators
             base.OnStart(state);
 
             //Symmetry controls
+            Events["MirrorRotation"].guiActiveEditor = canMirrorRotation;
             if (mirrorRotation)
                 Events["MirrorRotation"].guiName = mirrorRotationName;
             else
@@ -335,6 +402,7 @@ namespace KerbalActuators
 
             if (isVisible)
             {
+                Events["MirrorRotation"].guiActiveEditor = canMirrorRotation;
                 Events["RotateToMin"].active = canRotateMin;
                 Events["RotateToMin"].guiName = rotateMinName;
                 Events["RotateToMax"].active = canRotateMax;
@@ -352,6 +420,20 @@ namespace KerbalActuators
                 Events["RotateToMax"].guiActiveEditor = canRotateMax;
                 Events["RotateToNeutral"].guiActive = false;
             }
+        }
+
+        public virtual void HideGUI()
+        {
+            Fields["state"].guiActive = false;
+            Fields["currentAngleDisplay"].guiActive = false;
+            Fields["state"].guiActiveEditor = false;
+            Fields["currentAngleDisplay"].guiActiveEditor = false;
+            Events["RotateToMin"].guiActive = false;
+            Events["RotateToMin"].guiActiveEditor = false;
+            Events["RotateToMax"].guiActive = false;
+            Events["RotateToMax"].guiActiveEditor = false;
+            Events["RotateToNeutral"].guiActive = false;
+            Events["RotateToNeutral"].guiActiveEditor = false;
         }
 
         protected virtual void setInitialRotation()
@@ -408,6 +490,138 @@ namespace KerbalActuators
                 rotationTarget.transform.localEulerAngles = (rotationVector * currentRotationAngle);
             else
                 rotationTarget.transform.localEulerAngles = (rotationVector * -currentRotationAngle);
+        }
+
+        public int GetPanelHeight()
+        {
+            return kPanelHeight;
+        }
+
+        public ConfigNode TakeSnapshot()
+        {
+            ConfigNode node = new ConfigNode(WBIServoManager.SERVODATA_NODE);
+
+            node.AddValue("currentRotationAngle", currentRotationAngle);
+            node.AddValue("rotationDegPerSec", rotationDegPerSec);
+
+            return node;
+        }
+
+        public void SetFromSnapshot(ConfigNode node)
+        {
+            float setAngle;
+
+            if (float.TryParse(node.GetValue("currentRotationAngle"), out setAngle))
+            {
+                SetRotation(setAngle);
+            }
+
+            float.TryParse(node.GetValue("rotationDegPerSec"), out rotationDegPerSec);
+        }
+
+        public bool IsMoving()
+        {
+            if (rotationState == ERotationStates.Locked)
+                return false;
+            else
+                return true;
+        }
+
+        public void DrawControls()
+        {
+            float setAngle;
+
+            GUILayout.BeginVertical();
+
+            GUILayout.BeginScrollView(scrollVector, panelOptions);
+
+            //Rotator name
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("<b><color=white>" + rotatorName + "</color></b>");
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(string.Format("<color=white><b>Angle: </b>{0:f2}</color>", currentRotationAngle));
+            GUILayout.EndHorizontal();
+
+            //Rotation speed
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("<color=white>Rotate:</color>");
+
+            int degPerSecInt = (int)rotationDegPerSec;
+            degPerSecText = degPerSecInt.ToString();
+            degPerSecText = GUILayout.TextField(degPerSecText);
+            degPerSecText = Regex.Replace(degPerSecText, @"[^0-9]", "");
+            float.TryParse(degPerSecText, out rotationDegPerSec);
+            degPerUpdate = rotationDegPerSec * TimeWarp.fixedDeltaTime;
+
+            GUILayout.Label("<color=white>deg/s</color>");
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+
+            //Rotation controls
+            if (minRotateAngle != -1.0f)
+            {
+                if (GUILayout.Button("Min"))
+                    RotateToMin();
+            }
+
+            if (GUILayout.RepeatButton("<"))
+                RotateDown(rotationDegPerSec * TimeWarp.fixedDeltaTime);
+
+            if (GUILayout.Button("0"))
+                RotateToNeutral();
+
+            if (GUILayout.RepeatButton(">"))
+                RotateUp(rotationDegPerSec * TimeWarp.fixedDeltaTime);
+
+            if (maxRotateAngle != -1.0f)
+            {
+                if (GUILayout.Button("Max"))
+                    RotateToMax();
+            }
+
+            GUILayout.EndHorizontal();
+
+            //Specific target angle
+            GUILayout.BeginHorizontal();
+
+            GUILayout.Label("<color=white>Angle:</color>");
+            targetAngleText = GUILayout.TextField(targetAngleText);
+            targetAngleText = Regex.Replace(targetAngleText, @"[^0-9]", "");
+            
+            //Make sure we're in bounds
+            if (float.TryParse(targetAngleText, out setAngle))
+            {
+                if (minRotateAngle != -1 && maxRotateAngle != -1)
+                {
+                    if (setAngle > maxRotateAngle && setAngle < minRotateAngle)
+                    {
+                        if (setAngle <= 180.0f)
+                            setAngle = maxRotateAngle;
+                        else
+                            setAngle = minRotateAngle;
+
+                        int angleInt = (int)setAngle;
+                        targetAngleText = angleInt.ToString();
+                    }
+                }
+
+                else
+                {
+                    setAngle = setAngle % 360.0f;
+                    int angleInt = (int)setAngle;
+                    targetAngleText = angleInt.ToString();
+                }
+            }
+
+            if (GUILayout.Button("Set"))
+                SetRotation(setAngle);
+
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndScrollView();
+
+            GUILayout.EndVertical();
         }
     }
 }

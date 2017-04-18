@@ -28,11 +28,11 @@ namespace KerbalActuators
 
         public void Awake()
         {
-            string settingsPath = AssemblyLoader.loadedAssemblies.GetPathByType(typeof(WBIVTOLAppButton)) + "/Settings.cfg";
+            string settingsPath = AssemblyLoader.loadedAssemblies.GetPathByType(typeof(WBIVTOLAppButton)) + "/KerbalActuatorsSettings.cfg";
             ConfigNode settingsNode = ConfigNode.Load(settingsPath);
             if (settingsNode == null)
             {
-                appIcon = GameDatabase.Instance.GetTexture("WildBlueIndustries/KerbalActuators/Icons/VTOLAppButton", false);
+                appIcon = GameDatabase.Instance.GetTexture(WBIServoManager.ICON_PATH + "VTOLAppButton", false);
             }
 
             else
@@ -45,10 +45,10 @@ namespace KerbalActuators
 
         private void SetupGUI()
         {
-            if (HighLogic.LoadedScene == GameScenes.FLIGHT || HighLogic.LoadedScene == GameScenes.SPACECENTER)
+            if (HighLogic.LoadedScene == GameScenes.FLIGHT)
             {
                 if (appLauncherButton == null)
-                    appLauncherButton = ApplicationLauncher.Instance.AddModApplication(ToggleGUI, ToggleGUI, null, null, null, null, ApplicationLauncher.AppScenes.ALWAYS, appIcon);
+                    appLauncherButton = ApplicationLauncher.Instance.AddModApplication(ToggleGUI, ToggleGUI, null, null, null, null, ApplicationLauncher.AppScenes.FLIGHT, appIcon);
             }
             else if (appLauncherButton != null)
                 ApplicationLauncher.Instance.RemoveModApplication(appLauncherButton);

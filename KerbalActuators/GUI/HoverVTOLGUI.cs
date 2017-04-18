@@ -21,8 +21,7 @@ namespace KerbalActuators
 {
     public class HoverVTOLGUI : Window<HoverVTOLGUI>
     {
-        const float kSmallRotationAngle = 5.0f;
-        const float kLargeRotationAngle = 10.0f;
+        const float kRotationAngle = 10.0f;
 
         public WBIVTOLManager vtolManager;
         public HoverControlSetupGUI hoverSetupGUI = new HoverControlSetupGUI();
@@ -32,7 +31,6 @@ namespace KerbalActuators
         public bool enginesActive;
         public bool canRotateMin;
         public bool canRotateMax;
-//        string targetAngleString = "0";
 
         Texture settingsIcon;
         Texture leftArrow, doubleLeftArrow, rightArrow, doubleRightArrow, okButton;
@@ -45,13 +43,21 @@ namespace KerbalActuators
         public HoverVTOLGUI(string title = "", int height = 15, int width = 310) :
         base(title, width, height)
         {
+            string baseIconURL = "WildBlueIndustries/KerbalActuators/Icons/";
+
+            string settingsPath = AssemblyLoader.loadedAssemblies.GetPathByType(typeof(WBIVTOLAppButton)) + "/KerbalActuatorsSettings.cfg";
+            ConfigNode settingsNode = ConfigNode.Load(settingsPath);
+            if (settingsNode != null)
+                baseIconURL = settingsNode.GetValue("iconsFolder");
+
+            settingsIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Gear", false);
+            leftArrow = GameDatabase.Instance.GetTexture(baseIconURL + "LeftArrow", false);
+            doubleLeftArrow = GameDatabase.Instance.GetTexture(baseIconURL + "DoubleLeftArrow", false);
+            rightArrow = GameDatabase.Instance.GetTexture(baseIconURL + "RightArrow", false);
+            doubleRightArrow = GameDatabase.Instance.GetTexture(baseIconURL + "DoubleRightArrow", false);
+            okButton = GameDatabase.Instance.GetTexture(baseIconURL + "WBIOK", false);
+
             Resizable = false;
-            settingsIcon = GameDatabase.Instance.GetTexture("WildBlueIndustries/KerbalKomets/Icons/Gear", false);
-            leftArrow = GameDatabase.Instance.GetTexture("WildBlueIndustries/KerbalKomets/Icons/LeftArrow", false);
-            doubleLeftArrow = GameDatabase.Instance.GetTexture("WildBlueIndustries/KerbalKomets/Icons/DoubleLeftArrow", false);
-            rightArrow = GameDatabase.Instance.GetTexture("WildBlueIndustries/KerbalKomets/Icons/RightArrow", false);
-            doubleRightArrow = GameDatabase.Instance.GetTexture("WildBlueIndustries/KerbalKomets/Icons/DoubleRightArrow", false);
-            okButton = GameDatabase.Instance.GetTexture("WildBlueIndustries/KerbalKomets/Icons/WBIOK", false);
         }
 
         public override void SetVisible(bool newValue)
@@ -90,7 +96,6 @@ namespace KerbalActuators
         {
             GUILayout.BeginVertical();
             GUILayout.BeginHorizontal();
-//            GUILayout.Label(string.Format("<color=white>Vertical Speed: {0:f2}m/s</color>", vtolManager.vessel.verticalSpeed));
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(settingsIcon, configButtonOptions))
                 hoverSetupGUI.SetVisible(true);
@@ -124,37 +129,21 @@ namespace KerbalActuators
 
         protected void drawRotationFineTuneControls()
         {
-//            float targetAngle;
-//            bool isNumber;
-
             GUILayout.BeginHorizontal();
 
             badTextStyle.normal.textColor = Color.red;
 
             if (GUILayout.Button(doubleLeftArrow, rotateButtonOptions))
-                vtolManager.IncreaseRotationAngle(kLargeRotationAngle);
+                vtolManager.IncreaseRotationAngle(kRotationAngle);
 
-            if (GUILayout.Button(leftArrow, rotateButtonOptions))
-                vtolManager.IncreaseRotationAngle(kSmallRotationAngle);
+            if (GUILayout.RepeatButton(leftArrow, rotateButtonOptions))
+                vtolManager.IncreaseRotationAngle(kRotationAngle * TimeWarp.fixedDeltaTime);
 
-            /*
-            //Try to get the target angle
-            targetAngleString = GUILayout.TextField(targetAngleString, textFieldStyle);
-            isNumber = float.TryParse(targetAngleString, out targetAngle);
-            if (isNumber)
-                textFieldStyle = goodTextStyle;
-            else
-                textFieldStyle = badTextStyle;
-
-            if (GUILayout.Button(okButton, rotateButtonOptions) && isNumber)
-                vtolManager.SetTargetAngle(targetAngle);
-             */
-
-            if (GUILayout.Button(rightArrow, rotateButtonOptions))
-                vtolManager.DecreaseRotationAngle(kSmallRotationAngle);
+            if (GUILayout.RepeatButton(rightArrow, rotateButtonOptions))
+                vtolManager.DecreaseRotationAngle(kRotationAngle * TimeWarp.fixedDeltaTime);
 
             if (GUILayout.Button(doubleRightArrow, rotateButtonOptions))
-                vtolManager.DecreaseRotationAngle(kLargeRotationAngle);
+                vtolManager.DecreaseRotationAngle(kRotationAngle);
 
             GUILayout.EndHorizontal();
         }
@@ -163,12 +152,13 @@ namespace KerbalActuators
         {
             GUILayout.BeginVertical();
             GUILayout.BeginHorizontal();
+
+            enginesActive = vtolManager.EnginesAreActive();
             if (enginesActive)
             {
                 if (GUILayout.Button("ENG\r\nOFF"))
                 {
                     vtolManager.StopEngines();
-                    enginesActive = false;
                 }
             }
 
@@ -177,13 +167,12 @@ namespace KerbalActuators
                 if (GUILayout.Button("ENG\r\nON"))
                 {
                     vtolManager.StartEngines();
-                    enginesActive = true;
                 }
             }
 
             if (canDrawThrustControls)
             {
-                if (GUILayout.Button("THRUST\r\nTOGL"))
+                if (GUILayout.Button("THRUST\r\nF/R"))
                     vtolManager.ToggleThrust();
             }
 

@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyrighgt 2015, by Michael Billard (Angel-125)
+Source code copyrighgt 2017, by Michael Billard (Angel-125)
 License: GNU General Public License Version 3
 License URL: http://www.gnu.org/licenses/
 If you want to use this code, give me a shout on the KSP forums! :)
@@ -41,9 +41,9 @@ namespace KerbalActuators
         public Vessel vessel;
         public Dictionary<string, KeyCode> controlCodes = new Dictionary<string,KeyCode>();
 
-        private WBIHoverController[] hoverControllers;
-        private WBIRotationController[] rotationControllers;
-        private WBIPropSpinner[] propSpinners;
+        private IHoverController[] hoverControllers;
+        private IRotationController[] rotationControllers;
+        private IPropSpinner[] propSpinners;
         private HoverVTOLGUI hoverGUI = new HoverVTOLGUI();
         private string hoverControlsPath;
 
@@ -52,26 +52,19 @@ namespace KerbalActuators
             WBIVTOLManager.Instance = this;
             GameEvents.onVesselLoaded.Add(VesselWasLoaded);
             GameEvents.onVesselChange.Add(VesselWasChanged);
+            GameEvents.onStageActivate.Add(OnStageActivate);
 
             hoverGUI.vtolManager = this;
+            hoverGUI.hoverSetupGUI.vtolManager = this;
 
             this.vessel = FlightGlobals.ActiveVessel;
 
             //Get the current control code mappings
             hoverControlsPath = AssemblyLoader.loadedAssemblies.GetPathByType(typeof(WBIVTOLManager)) + "/VTOLControls.cfg";
-            loadControls();
+            LoadControls();
         }
 
-        public void OnGUI()
-        {
-            if (hoverGUI.IsVisible())
-                hoverGUI.DrawWindow();
-
-            if (hoverGUI.hoverSetupGUI.IsVisible())
-                hoverGUI.hoverSetupGUI.DrawWindow();
-        }
-
-        protected void loadControls()
+        public void LoadControls()
         {
             ConfigNode nodeControls = null;
             KeyCode keyCode;
@@ -129,6 +122,7 @@ namespace KerbalActuators
             //Set default values
             else
             {
+                controlCodes.Clear();
                 controlCodes.Add(LABEL_HOVER, KeyCode.Insert);
                 controlCodes.Add(LABEL_VSPDINC, KeyCode.PageUp);
                 controlCodes.Add(LABEL_VSPDZERO, KeyCode.Delete);
@@ -179,6 +173,11 @@ namespace KerbalActuators
             saveControls();
         }
 
+        public void OnStageActivate(int stageID)
+        {
+            hoverGUI.enginesActive = EnginesAreActive();
+        }
+
         public void VesselWasChanged(Vessel vessel)
         {
             FindControllers(vessel);
@@ -199,7 +198,7 @@ namespace KerbalActuators
 
         public void FindHoverControllers()
         {
-            List<WBIHoverController> controllers = vessel.FindPartModulesImplementing<WBIHoverController>();
+            List<IHoverController> controllers = vessel.FindPartModulesImplementing<IHoverController>();
 
             if (controllers.Count > 0)
                 hoverControllers = controllers.ToArray();
@@ -207,14 +206,14 @@ namespace KerbalActuators
 
         public void FindRotationControllers()
         {
-            List<WBIRotationController> controllers = vessel.FindPartModulesImplementing<WBIRotationController>();
-            List<WBIRotationController> rotationControllerList = new List<WBIRotationController>();
+            List<IRotationController> controllers = vessel.FindPartModulesImplementing<IRotationController>();
+            List<IRotationController> rotationControllerList = new List<IRotationController>();
 
             //Find all the controllers that belong to the Engine list.
-            WBIRotationController[] rotationItems = controllers.ToArray();
+            IRotationController[] rotationItems = controllers.ToArray();
             for (int index = 0; index < rotationItems.Length; index++)
             {
-                if (rotationItems[index].groupID == kEngineGroup)
+                if (rotationItems[index].GetGroupID() == kEngineGroup)
                     rotationControllerList.Add(rotationItems[index]);
             }
 
@@ -224,7 +223,7 @@ namespace KerbalActuators
 
         public void FindPropSpinners()
         {
-            List<WBIPropSpinner> spinners = vessel.FindPartModulesImplementing<WBIPropSpinner>();
+            List<IPropSpinner> spinners = vessel.FindPartModulesImplementing<IPropSpinner>();
 
             if (spinners.Count > 0)
                 propSpinners = spinners.ToArray();
@@ -237,7 +236,7 @@ namespace KerbalActuators
 
             for (int index = 0; index < rotationControllers.Length; index++)
             {
-                if (rotationControllers[index].canRotateMin == false)
+                if (rotationControllers[index].CanRotateMin() == false)
                     return false;
             }
 
@@ -251,7 +250,7 @@ namespace KerbalActuators
 
             for (int index = 0; index < rotationControllers.Length; index++)
             {
-                if (rotationControllers[index].canRotateMax == false)
+                if (rotationControllers[index].CanRotateMax() == false)
                     return false;
             }
 
@@ -263,9 +262,6 @@ namespace KerbalActuators
             if (rotationControllers == null || rotationControllers.Length == 0)
                 return;
 
-            if (!hoverActive)
-                ToggleHover();
-
             for (int index = 0; index < rotationControllers.Length; index++)
                 rotationControllers[index].RotateMin(false);
         }
@@ -274,9 +270,6 @@ namespace KerbalActuators
         {
             if (rotationControllers == null || rotationControllers.Length == 0)
                 return;
-
-            if (!hoverActive)
-                ToggleHover();
 
             for (int index = 0; index < rotationControllers.Length; index++)
                 rotationControllers[index].RotateMax(false);
@@ -287,9 +280,6 @@ namespace KerbalActuators
             if (rotationControllers == null || rotationControllers.Length == 0)
                 return;
 
-            if (hoverActive)
-                ToggleHover();
-
             for (int index = 0; index < rotationControllers.Length; index++)
                 rotationControllers[index].RotateNeutral(false);
         }
@@ -298,41 +288,18 @@ namespace KerbalActuators
         {
             if (rotationControllers == null || rotationControllers.Length == 0)
                 return;
-            WBIRotationController controller;
-
-            if (!hoverActive)
-                ToggleHover();
 
             for (int index = 0; index < rotationControllers.Length; index++)
-            {
-                controller = rotationControllers[index];
-                controller.RotateUp(rotationDelta);
-            }
+                rotationControllers[index].RotateUp(rotationDelta);
         }
 
         public void DecreaseRotationAngle(float rotationDelta)
         {
             if (rotationControllers == null || rotationControllers.Length == 0)
                 return;
-            WBIRotationController controller;
-
-            if (!hoverActive)
-                ToggleHover();
 
             for (int index = 0; index < rotationControllers.Length; index++)
-            {
-                controller = rotationControllers[index];
-                controller.RotateDown(rotationDelta);
-            }
-        }
-
-        public void SetTargetAngle(float rotationAngle)
-        {
-            if (rotationControllers == null || rotationControllers.Length == 0)
-                return;
-
-            if (!hoverActive)
-                ToggleHover();
+                rotationControllers[index].RotateDown(rotationDelta);
         }
 
         public void ToggleThrust()
@@ -352,10 +319,7 @@ namespace KerbalActuators
                 return;
 
             for (int index = 0; index < propSpinners.Length; index++)
-            {
-                propSpinners[index].reverseThrust = false;
-                propSpinners[index].SetupThrustTransform();
-            }
+                propSpinners[index].SetReverseThrust(false);
         }
 
         public void SetReverseThrust()
@@ -365,8 +329,7 @@ namespace KerbalActuators
 
             for (int index = 0; index < propSpinners.Length; index++)
             {
-                propSpinners[index].reverseThrust = true;
-                propSpinners[index].SetupThrustTransform();
+                propSpinners[index].SetReverseThrust(true);
             }
         }
 
@@ -377,7 +340,7 @@ namespace KerbalActuators
 
             for (int index = 0; index < hoverControllers.Length; index++)
             {
-                if (hoverControllers[index].engine.isOperational == false)
+                if (hoverControllers[index].IsEngineActive() == false)
                     return false;
             }
 
@@ -457,6 +420,8 @@ namespace KerbalActuators
             if (hoverControllers.Length == 0)
                 return;
             hoverActive = !hoverActive;
+            if (!hoverActive)
+                verticalSpeed = 0f;
 
             //Set hover mode
             //We actually DON'T want to calculate the throttle setting because other engines that aren't in hover mode might need it.
@@ -469,9 +434,17 @@ namespace KerbalActuators
         public void ToggleGUI()
         {
             if (!hoverGUI.IsVisible())
+            {
+                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI);
+                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI.hoverSetupGUI);
                 ShowGUI();
+            }
             else
+            {
+                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI);
+                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI.hoverSetupGUI);
                 hoverGUI.SetVisible(false);
+            }
         }
 
         public void ShowGUI()
@@ -535,7 +508,7 @@ namespace KerbalActuators
 
             for (int index = 0; index < hoverControllers.Length; index++)
             {
-                hoverControllers[index].SetEngineThrottle(throttleState);
+                hoverControllers[index].UpdateHoverState(throttleState);
             }
         }
 

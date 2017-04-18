@@ -37,16 +37,23 @@ namespace KerbalActuators
             base.SetVisible(newValue);
 
             if (newValue)
+                loadControls();
+        }
+
+        protected void loadControls()
+        {
+            vtolManager.LoadControls();
+
+            controlCodes = vtolManager.controlCodes;
+
+            List<string> labels = new List<string>();
+
+            foreach (string key in controlCodes.Keys)
             {
-                controlCodes = vtolManager.controlCodes;
-
-                List<string> labels = new List<string>();
-
-                foreach (string key in controlCodes.Keys)
-                    labels.Add(key);
-
-                controlLabels = labels.ToArray();
+                labels.Add(key);
             }
+
+            controlLabels = labels.ToArray();
         }
 
         protected override void DrawWindowContents(int windowId)
