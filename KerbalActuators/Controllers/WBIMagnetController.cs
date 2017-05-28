@@ -48,7 +48,7 @@ namespace KerbalActuators
         Part targetPart = null;
         ResourceBroker resourceBroker;
         float unitsPerUpdate;
-        FixedJoint fixedJoint;
+//        FixedJoint fixedJoint;
         float forcePerTransform;
 
         public override void OnStart(StartState state)

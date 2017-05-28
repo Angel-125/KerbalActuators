@@ -22,9 +22,11 @@ namespace KerbalActuators
     public class HoverVTOLGUI : Window<HoverVTOLGUI>
     {
         const float kRotationAngle = 10.0f;
+        const float kSmallIncrementFactor = 100.0f;
 
         public WBIVTOLManager vtolManager;
         public HoverControlSetupGUI hoverSetupGUI = new HoverControlSetupGUI();
+        public bool canDrawParkingControls;
         public bool canDrawRotationControls;
         public bool canDrawThrustControls;
         public bool canDrawHoverControls;
@@ -33,17 +35,18 @@ namespace KerbalActuators
         public bool canRotateMax;
 
         Texture settingsIcon;
-        Texture leftArrow, doubleLeftArrow, rightArrow, doubleRightArrow, okButton;
+        Texture leftArrow, doubleLeftArrow, rightArrow, doubleRightArrow, okButton, forwardIcon, upIcon, downIcon;
         GUILayoutOption[] configButtonOptions = new GUILayoutOption[] { GUILayout.Width(24), GUILayout.Height(24) };
         GUILayoutOption[] rotateButtonOptions = new GUILayoutOption[] { GUILayout.Width(36), GUILayout.Height(36) };
         GUIStyle badTextStyle;
         GUIStyle goodTextStyle;
         GUIStyle textFieldStyle;
+        bool isParked = false;
 
-        public HoverVTOLGUI(string title = "", int height = 15, int width = 310) :
+        public HoverVTOLGUI(string title = "VTOL Manager", int height = 15, int width = 310) :
         base(title, width, height)
         {
-            string baseIconURL = "WildBlueIndustries/KerbalActuators/Icons/";
+            string baseIconURL = "WildBlueIndustries/001KerbalActuators/Icons/";
 
             string settingsPath = AssemblyLoader.loadedAssemblies.GetPathByType(typeof(WBIVTOLAppButton)) + "/KerbalActuatorsSettings.cfg";
             ConfigNode settingsNode = ConfigNode.Load(settingsPath);
@@ -56,6 +59,9 @@ namespace KerbalActuators
             rightArrow = GameDatabase.Instance.GetTexture(baseIconURL + "RightArrow", false);
             doubleRightArrow = GameDatabase.Instance.GetTexture(baseIconURL + "DoubleRightArrow", false);
             okButton = GameDatabase.Instance.GetTexture(baseIconURL + "WBIOK", false);
+            forwardIcon = GameDatabase.Instance.GetTexture(baseIconURL + "RotateForward", false);
+            upIcon = GameDatabase.Instance.GetTexture(baseIconURL + "RotateUp", false);
+            downIcon = GameDatabase.Instance.GetTexture(baseIconURL + "RotateDown", false);
 
             Resizable = false;
         }
@@ -66,6 +72,9 @@ namespace KerbalActuators
 
             if (hoverSetupGUI != null)
                 hoverSetupGUI.vtolManager = this.vtolManager;
+
+            if (canDrawParkingControls)
+                isParked = vtolManager.IsParked();
         }
 
         protected override void DrawWindowContents(int windowId)
@@ -86,10 +95,38 @@ namespace KerbalActuators
 
             drawHeaderControls();
 
-            drawEngineControls();
+            if (canDrawParkingControls)
+                drawParkingControls();
+
+            if (canDrawRotationControls)
+            {
+                GUILayout.FlexibleSpace();
+                GUILayout.Label("<color=white><b>--- Engine Rotation ---</b></color>");
+                GUILayout.FlexibleSpace();
+                GUILayout.BeginHorizontal();
+                drawRotationControls();
+                drawRotationFineTuneControls();
+                GUILayout.EndHorizontal();
+            }
+
+//            drawEngineControls();
 
             if (canDrawHoverControls)
                 drawHoverControls();
+        }
+
+        protected void drawParkingControls()
+        {
+            GUILayout.BeginVertical();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("<color=white><b>Situation: </b>" + vtolManager.GetSituation() + "</color>");
+            GUILayout.Label("<color=white><b>Is parked: </b>" + vtolManager.IsParked() + "</color>");
+            GUILayout.EndHorizontal();
+            if (GUILayout.Button("Toggle Park"))
+                vtolManager.TogglePark();
+
+            GUILayout.EndVertical();
         }
 
         protected void drawHeaderControls()
@@ -107,20 +144,20 @@ namespace KerbalActuators
         {
             if (canRotateMin)
             {
-                if (GUILayout.Button("ROT\r\nDN"))
+                if (GUILayout.Button(downIcon, rotateButtonOptions))
                 {
                     vtolManager.RotateToMin();
                 }
             }
 
-            if (GUILayout.Button("ROT\r\nFWD"))
+            if (GUILayout.Button(forwardIcon, rotateButtonOptions))
             {
                 vtolManager.RotateToNeutral();
             }
 
             if (canRotateMax)
             {
-                if (GUILayout.Button("ROT\r\nUP"))
+                if (GUILayout.Button(upIcon, rotateButtonOptions))
                 {
                     vtolManager.RotateToMax();
                 }
@@ -193,9 +230,12 @@ namespace KerbalActuators
         {
             GUILayout.BeginVertical();
 
+            GUILayout.Label(string.Format("<color=white><b>Vertical Speed: </b>{0:f1}m/s</color>", vtolManager.verticalSpeed));
+
             GUILayout.BeginHorizontal();
 
             GUILayout.BeginVertical();
+
             if (vtolManager.hoverActive)
             {
                 if (GUILayout.Button("<color=yellow>HOVR</color>\r\n"))
@@ -210,22 +250,29 @@ namespace KerbalActuators
             GUILayout.EndVertical();
 
             GUILayout.BeginVertical();
-            if (GUILayout.Button("VSPD\r\n+"))
-                vtolManager.IncreaseVerticalSpeed();
+            if (GUILayout.Button("VSPD\r\n--"))
+                vtolManager.DecreaseVerticalSpeed(vtolManager.verticalSpeedIncrements);
 
-            GUILayout.Label(vtolManager.codeIncreaseVSpeed.ToString());
+            GUILayout.Label(vtolManager.LabelForKeyCode(vtolManager.codeDecreaseVSpeed));
             GUILayout.EndVertical();
+
+            if (GUILayout.RepeatButton("VSPD\r\n-"))
+                vtolManager.DecreaseVerticalSpeed(vtolManager.verticalSpeedIncrements/kSmallIncrementFactor);
 
             GUILayout.BeginVertical();
             if (GUILayout.Button("VSPD\r\n0"))
                 vtolManager.KillVerticalSpeed();
-            GUILayout.Label(vtolManager.codeZeroVSpeed.ToString());
+            GUILayout.Label(vtolManager.LabelForKeyCode(vtolManager.codeZeroVSpeed));
             GUILayout.EndVertical();
 
+            if (GUILayout.RepeatButton("VSPD\r\n+"))
+                vtolManager.IncreaseVerticalSpeed(vtolManager.verticalSpeedIncrements/kSmallIncrementFactor);
+
             GUILayout.BeginVertical();
-            if (GUILayout.Button("VSPD\r\n-"))
-                vtolManager.DecreaseVerticalSpeed();
-            GUILayout.Label(vtolManager.codeDecreaseVSpeed.ToString());
+            if (GUILayout.Button("VSPD\r\n++"))
+                vtolManager.IncreaseVerticalSpeed(vtolManager.verticalSpeedIncrements);
+
+            GUILayout.Label(vtolManager.LabelForKeyCode(vtolManager.codeIncreaseVSpeed));
             GUILayout.EndVertical();
 
             GUILayout.EndHorizontal();

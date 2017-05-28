@@ -107,7 +107,16 @@ namespace KerbalActuators
             if (engine == null)
                 return;
 
-            engine.currentThrottle = throttleValue * engine.thrustPercentage / 100.0f;
+            //This is crude but effective. What we do is jitter the engine throttle up and down to maintain desired vertical speed.
+            //It tends to vibrate the engines but they're ok. This will have to do until I can figure out the relation between
+            //engine.finalThrust, engine.maxThrust, and the force needed to make the craft hover.
+            float throttleState = 0;
+            if (this.part.vessel.verticalSpeed >= verticalSpeed)
+                throttleState = 0f;
+            else
+                throttleState = 1.0f;
+
+            engine.currentThrottle = throttleState * engine.thrustPercentage / 100.0f;
         }
 
         public virtual void SetHoverMode(bool isActive)
@@ -195,7 +204,8 @@ namespace KerbalActuators
 
         public virtual void printSpeed()
         {
-            ScreenMessages.PostScreenMessage(new ScreenMessage("Hover Climb Rate: " + verticalSpeed, 1f, ScreenMessageStyle.UPPER_CENTER));
+            if (guiVisible)
+                ScreenMessages.PostScreenMessage(new ScreenMessage("Hover Climb Rate: " + verticalSpeed, 1f, ScreenMessageStyle.UPPER_CENTER));
         }
 
         public virtual void ActivateHover()
@@ -234,15 +244,16 @@ namespace KerbalActuators
                 onHoverUpdate(hoverActive, verticalSpeed);
         }
 
-        public void UpdateHoverState()
-        {
-        }
-
         protected void getCurrentEngine()
         {
             //If we have multiple engines, make sure we have the current one.
             if (engineSwitcher != null)
-                engine = multiModeEngines[engineSwitcher.engineName];
+            {
+                if (engineSwitcher.runningPrimary)
+                    engine = multiModeEngines[engineSwitcher.primaryEngineID];
+                else
+                    engine = multiModeEngines[engineSwitcher.secondaryEngineID];
+            }
         }
 
         protected void setupEngines()
@@ -254,9 +265,15 @@ namespace KerbalActuators
                 List<ModuleEnginesFX> engines = this.part.FindModulesImplementing<ModuleEnginesFX>();
 
                 foreach (ModuleEnginesFX multiEngine in engines)
+                {
                     multiModeEngines.Add(multiEngine.engineID, multiEngine);
+                }
 
-                engine = multiModeEngines[engineSwitcher.engineName];
+                foreach (string key in multiModeEngines.Keys)
+                    Debug.Log("FRED engine id key: " + key);
+                Debug.Log("FRED engineSwitcher.engineName: " + engineSwitcher.primaryEngineID);
+
+                engine = multiModeEngines[engineSwitcher.primaryEngineID];
                 return;
             }
 

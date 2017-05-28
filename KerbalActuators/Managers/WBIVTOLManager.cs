@@ -41,6 +41,7 @@ namespace KerbalActuators
         public Vessel vessel;
         public Dictionary<string, KeyCode> controlCodes = new Dictionary<string,KeyCode>();
 
+        private IAirParkController airParkController;
         private IHoverController[] hoverControllers;
         private IRotationController[] rotationControllers;
         private IPropSpinner[] propSpinners;
@@ -194,6 +195,12 @@ namespace KerbalActuators
             FindHoverControllers();
             FindRotationControllers();
             FindPropSpinners();
+            FindAirParkControllers();
+        }
+
+        public void FindAirParkControllers()
+        {
+            airParkController = vessel.FindPartModuleImplementing<IAirParkController>();
         }
 
         public void FindHoverControllers()
@@ -219,6 +226,36 @@ namespace KerbalActuators
 
             if (rotationControllerList.Count > 0)
                 rotationControllers = rotationControllerList.ToArray();
+        }
+
+        public bool IsParked()
+        {
+            if (airParkController == null)
+                return true;
+
+            return airParkController.IsParked();
+        }
+
+        public void TogglePark()
+        {
+            if (airParkController != null)
+                airParkController.TogglePark();
+        }
+
+        public string GetSituation()
+        {
+            if (airParkController != null)
+                return airParkController.GetSituation();
+            else
+                return "N/A";
+        }
+
+        public void SetPark(bool isParked)
+        {
+            if (airParkController != null)
+            {
+                airParkController.SetParking(isParked);
+            }
         }
 
         public void FindPropSpinners()
@@ -370,34 +407,30 @@ namespace KerbalActuators
                 hoverControllers[index].StopEngine();
         }
 
-        public void DecreaseVerticalSpeed()
+        public void DecreaseVerticalSpeed(float amount = 1.0f)
         {
             if (hoverControllers.Length == 0)
                 return;
             if (hoverActive == false)
                 ToggleHover();
 
-            verticalSpeed -= verticalSpeedIncrements;
+            verticalSpeed -= amount;
 
             for (int index = 0; index < hoverControllers.Length; index++)
                 hoverControllers[index].SetVerticalSpeed(verticalSpeed);
-
-            printSpeed();
         }
 
-        public void IncreaseVerticalSpeed()
+        public void IncreaseVerticalSpeed(float amount = 1.0f)
         {
             if (hoverControllers.Length == 0)
                 return;
             if (hoverActive == false)
                 ToggleHover();
 
-            verticalSpeed += verticalSpeedIncrements;
+            verticalSpeed += amount;
 
             for (int index = 0; index < hoverControllers.Length; index++)
                 hoverControllers[index].SetVerticalSpeed(verticalSpeed);
-
-            printSpeed();
         }
 
         public void KillVerticalSpeed()
@@ -411,8 +444,6 @@ namespace KerbalActuators
 
             for (int index = 0; index < hoverControllers.Length; index++)
                 hoverControllers[index].KillVerticalSpeed();
-
-            printSpeed();
         }
 
         public void ToggleHover()
@@ -451,6 +482,11 @@ namespace KerbalActuators
         {
             FindControllers(FlightGlobals.ActiveVessel);
 
+            if (airParkController != null)
+                hoverGUI.canDrawParkingControls = true;
+            else
+                hoverGUI.canDrawParkingControls = false;
+
             if (hoverControllers != null && hoverControllers.Length > 0)
                 hoverGUI.canDrawHoverControls = true;
             else
@@ -476,16 +512,32 @@ namespace KerbalActuators
         public void Update()
         {
             if (Input.GetKeyDown(codeDecreaseVSpeed))
+            {
                 DecreaseVerticalSpeed();
+                printSpeed();
+            }
 
             if (Input.GetKeyDown(codeIncreaseVSpeed))
+            {
                 IncreaseVerticalSpeed();
+                printSpeed();
+            }
 
             if (Input.GetKeyDown(codeZeroVSpeed))
+            {
                 KillVerticalSpeed();
+                printSpeed();
+            }
 
             if (Input.GetKeyDown(codeToggleHover))
+            {
                 ToggleHover();
+
+                if (hoverActive)
+                    ScreenMessages.PostScreenMessage(new ScreenMessage("Hover ON", 1f, ScreenMessageStyle.UPPER_CENTER));
+                else
+                    ScreenMessages.PostScreenMessage(new ScreenMessage("Hover OFF", 1f, ScreenMessageStyle.UPPER_CENTER));
+            }
         }
 
         public void FixedUpdate()
@@ -501,7 +553,7 @@ namespace KerbalActuators
             //It tends to vibrate the engines but they're ok. This will have to do until I can figure out the relation between
             //engine.finalThrust, engine.maxThrust, and the force needed to make the craft hover.
             float throttleState = 0;
-            if (vessel.verticalSpeed >= verticalSpeed)
+            if (FlightGlobals.ActiveVessel.verticalSpeed >= verticalSpeed)
                 throttleState = 0f;
             else
                 throttleState = 1.0f;
@@ -515,6 +567,24 @@ namespace KerbalActuators
         public virtual void printSpeed()
         {
             ScreenMessages.PostScreenMessage(new ScreenMessage("Hover Climb Rate: " + verticalSpeed, 1f, ScreenMessageStyle.UPPER_CENTER));
+        }
+
+        public string LabelForKeyCode(KeyCode code)
+        {
+            switch (code)
+            {
+                case KeyCode.PageDown:
+                    return "PgDn";
+
+                case KeyCode.PageUp:
+                    return "PgUp";
+
+                case KeyCode.Delete:
+                    return "Del";
+
+                default:
+                    return code.ToString();
+            }
         }
     }
 }

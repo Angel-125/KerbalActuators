@@ -28,7 +28,7 @@ namespace KerbalActuators
 
     public class WBIServoManager : PartModule
     {
-        public const string ICON_PATH = "WildBlueIndustries/KerbalActuators/Icons/";
+        public const string ICON_PATH = "WildBlueIndustries/001KerbalActuators/Icons/";
         public const string SERVODATA_NODE = "SERVODATA";
         public const string SNAPSHOT_NODE = "SNAPSHOT";
         public const string SEQUENCE_NODE = "SEQUENCE";
