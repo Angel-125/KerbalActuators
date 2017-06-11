@@ -12,4 +12,3 @@ C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Mon
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\UnityEngine.xml
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.pdb
-C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.csprojResolveAssemblyReference.cache

@@ -26,8 +26,8 @@ namespace KerbalActuators
 
     public class WBIPropSpinner : PartModule, IPropSpinner
     {
-        const string kForwardThrust = "Thrust: Forward";
-        const string kReverseThrust = "Thrust: Reverse";
+        const string kForwardThrust = "Set Forward Thrust";
+        const string kReverseThrust = "Set Reverse Thrust";
 
         [KSPField(isPersistant = true)]
         public bool reverseThrust;
@@ -38,10 +38,8 @@ namespace KerbalActuators
         [KSPField]
         public string reverseThrustTransform = "reverseThrustTransform";
 
-        //If the engine is capable of reversing thrust but has no reverse thrust transform,
-        //then set this to true, and thrustTransform will be flipped to reverse thrust.
         [KSPField]
-        public bool useDefaultReverseThrust;
+        public bool canReverseThrust = true;
 
         //Name of the non-blurred rotor
         //The whole thing spins
@@ -96,6 +94,9 @@ namespace KerbalActuators
 
         [KSPField]
         public bool guiVisible = true;
+
+        [KSPField]
+        public bool actionsVisible = true;
 
         //During the shutdown process, how fast, in degrees/sec, do the rotors rotate to neutral?
         [KSPField]
@@ -218,24 +219,29 @@ namespace KerbalActuators
             //Set gui visible state
             SetGUIVisible(guiVisible);
 
-            //Setup the thrust transform
-            fwdThrustTransform = this.part.FindModelTransform(thrustTransform);
-            revThrustTransform = this.part.FindModelTransform(reverseThrustTransform);
-
-            //If we are using default reverse thrust (usually when we don't have a separate transform for reverse thrust)
-            //then flip the forward thrust initially (it'll get flipped properly when we setup our thrust transform)
-            if (useDefaultReverseThrust)
-                fwdThrustTransform.Rotate(fwdThrustTransform.right, 180.0f);
-
-            if (fwdThrustTransform != null && (revThrustTransform != null || useDefaultReverseThrust))
+            //Setup actions
+            if (!actionsVisible)
             {
-                SetupThrustTransform();
+                Actions["ToggleThrustTransformAction"].actionGroup = KSPActionGroup.None;
+                Actions["ToggleThrustTransformAction"].active = false;
             }
 
-            else
+            //Setup the thrust transform
+            if (canReverseThrust)
             {
-                Events["ToggleThrustTransform"].active = false;
-                Actions["ToggleThrustTransformAction"].active = false;
+                fwdThrustTransform = this.part.FindModelTransform(thrustTransform);
+                revThrustTransform = this.part.FindModelTransform(reverseThrustTransform);
+
+                if (fwdThrustTransform != null && revThrustTransform != null)
+                {
+                    SetupThrustTransform();
+                }
+
+                else
+                {
+                    Events["ToggleThrustTransform"].active = false;
+                    Actions["ToggleThrustTransformAction"].active = false;
+                }
             }
 
             //Rotor transforms
@@ -260,29 +266,18 @@ namespace KerbalActuators
 
         public void SetupThrustTransform()
         {
-            //If we're using the default thrust, then just flip the thrust transform accordingly.
-            if (useDefaultReverseThrust)
-            {
-                if (!reverseThrust)
-                    Events["ToggleThrustTransform"].guiName = kForwardThrust;
-                else
-                    Events["ToggleThrustTransform"].guiName = kReverseThrust;
-                fwdThrustTransform.Rotate(fwdThrustTransform.right, 180.0f);
-                return;
-            }
-
             //We have separate forward and reverse thrust transforms. Switch them out.
             engine.thrustTransforms.Clear();
-            if (!reverseThrust)
+            if (reverseThrust)
             {
                 Events["ToggleThrustTransform"].guiName = kForwardThrust;
-                engine.thrustTransforms.Add(fwdThrustTransform);
+                engine.thrustTransforms.Add(revThrustTransform);
             }
 
             else
             {
                 Events["ToggleThrustTransform"].guiName = kReverseThrust;
-                engine.thrustTransforms.Add(revThrustTransform);
+                engine.thrustTransforms.Add(fwdThrustTransform);
             }
         }
 
