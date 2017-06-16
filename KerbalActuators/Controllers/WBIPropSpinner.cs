@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using KSP.IO;
+using KSP.Localization;
 
 /*
 Source code copyright 2017, by Michael Billard (Angel-125)
@@ -26,8 +27,12 @@ namespace KerbalActuators
 
     public class WBIPropSpinner : PartModule, IPropSpinner
     {
-        const string kForwardThrust = "Set Forward Thrust";
-        const string kReverseThrust = "Set Reverse Thrust";
+
+        [KSPField]
+        public string kForwardThrust = "Set Forward Thrust";
+
+        [KSPField]
+        public string kReverseThrust = "Set Reverse Thrust";
 
         [KSPField(isPersistant = true)]
         public bool reverseThrust;
@@ -270,13 +275,13 @@ namespace KerbalActuators
             engine.thrustTransforms.Clear();
             if (reverseThrust)
             {
-                Events["ToggleThrustTransform"].guiName = kForwardThrust;
+                Events["ToggleThrustTransform"].guiName = Localizer.Format(kForwardThrust);
                 engine.thrustTransforms.Add(revThrustTransform);
             }
 
             else
             {
-                Events["ToggleThrustTransform"].guiName = kReverseThrust;
+                Events["ToggleThrustTransform"].guiName = Localizer.Format(kReverseThrust);
                 engine.thrustTransforms.Add(fwdThrustTransform);
             }
         }
