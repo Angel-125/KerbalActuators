@@ -347,9 +347,16 @@ namespace KerbalActuators
                 List<ModuleEnginesFX> engines = this.part.FindModulesImplementing<ModuleEnginesFX>();
 
                 foreach (ModuleEnginesFX multiEngine in engines)
+                {
                     multiModeEngines.Add(multiEngine.engineID, multiEngine);
-
-                engine = multiModeEngines[engineSwitcher.engineName];
+                    
+                }
+                
+                if (engineSwitcher.runningPrimary)
+                    engine = multiModeEngines[engineSwitcher.primaryEngineID];
+                else
+                    engine = multiModeEngines[engineSwitcher.secondaryEngineID];
+                
                 return;
             }
 
@@ -361,7 +368,12 @@ namespace KerbalActuators
         {
             //If we have multiple engines, make sure we have the current one.
             if (engineSwitcher != null)
-                engine = multiModeEngines[engineSwitcher.engineName];
+            {
+                if (engineSwitcher.runningPrimary)
+                    engine = multiModeEngines[engineSwitcher.primaryEngineID];
+                else
+                    engine = multiModeEngines[engineSwitcher.secondaryEngineID];
+            }
 
             //No engine? Then it's clearly not running...
             if (engine == null)
