@@ -27,10 +27,11 @@ namespace KerbalActuators
 
     public class WBIPropSpinner : PartModule, IPropSpinner
     {
-
+        // Localized name of forward thrust action
         [KSPField]
         public string kForwardThrust = "Set Forward Thrust";
 
+        // Localized name of reverse thrust action
         [KSPField]
         public string kReverseThrust = "Set Reverse Thrust";
 
@@ -45,6 +46,14 @@ namespace KerbalActuators
 
         [KSPField]
         public bool canReverseThrust = true;
+
+        // Name of part animation for reversed thrust
+        [KSPField]
+        public string reverseThrustAnimation = string.Empty;
+
+        // Layer of the animation
+        [KSPField]
+        public int animationLayer = 1;
 
         //Name of the non-blurred rotor
         //The whole thing spins
@@ -123,6 +132,7 @@ namespace KerbalActuators
         Transform blurredRotorTransform = null;
         Transform[] standardBlades = null;
         Transform[] mirroredBlades = null;
+        AnimationState reverseThrustAnimationState;
 
         public void MirrorRotation(bool isMirrored)
         {
@@ -141,6 +151,7 @@ namespace KerbalActuators
         {
             reverseThrust = !reverseThrust;
             SetupThrustTransform();
+            HandleReverseThrustAnimation();
 
             //Don't forget the symmetrical parts...
             if (this.part.symmetryCounterparts.Count > 0)
@@ -152,6 +163,7 @@ namespace KerbalActuators
                     {
                         propController.reverseThrust = this.reverseThrust;
                         propController.SetupThrustTransform();
+                        propController.HandleReverseThrustAnimation();
                     }
                 }
             }
@@ -162,12 +174,14 @@ namespace KerbalActuators
         {
             reverseThrust = isReverseThrust;
             SetupThrustTransform();
+            HandleReverseThrustAnimation();
         }
 
         public virtual void ToggleThrust()
         {
             reverseThrust = !reverseThrust;
             SetupThrustTransform();
+            HandleReverseThrustAnimation();
         }
 
         public virtual void SetGUIVisible(bool isVisible)
@@ -240,6 +254,7 @@ namespace KerbalActuators
                 if (fwdThrustTransform != null && revThrustTransform != null)
                 {
                     SetupThrustTransform();
+                    SetupAnimation();
                 }
 
                 else
@@ -247,6 +262,8 @@ namespace KerbalActuators
                     Events["ToggleThrustTransform"].active = false;
                     Actions["ToggleThrustTransformAction"].active = false;
                 }
+                
+
             }
 
             //Rotor transforms
@@ -286,6 +303,41 @@ namespace KerbalActuators
             }
         }
 
+        protected void SetupAnimation()
+        {
+            // Set up animation if needed
+            if (!String.IsNullOrEmpty(reverseThrustAnimation))
+            {
+                Animation anim = part.FindModelAnimator(reverseThrustAnimation);
+                reverseThrustAnimationState = anim[reverseThrustAnimation];
+                reverseThrustAnimationState.time = 0;
+                reverseThrustAnimationState.speed = 0;
+                reverseThrustAnimationState.layer = animationLayer;
+                reverseThrustAnimationState.enabled = true;
+                reverseThrustAnimationState.wrapMode = WrapMode.ClampForever;
+                anim.Blend(reverseThrustAnimation);
+    
+            }
+        }
+
+        public void HandleReverseThrustAnimation()
+        {
+            if (reverseThrustAnimationState != null)
+            {
+           
+                if (reverseThrust)
+                {
+                    reverseThrustAnimationState.enabled = true;
+                    reverseThrustAnimationState.speed = 1f;
+                }
+                else
+                {
+                    reverseThrustAnimationState.enabled = true;
+                    reverseThrustAnimationState.speed = -1f;
+                }
+            }
+        }
+
         protected void setupEngines()
         {
             //See if we have multiple engines that we need to support
@@ -322,8 +374,11 @@ namespace KerbalActuators
                 return true;
         }
 
+      
+
         protected void rotatePropellersShutdown()
         {
+           
             //If our spool rate is 0 then spin them back to the neutral position.
             //Useful for making sure our rotors are in the right position for folding.
             if (currentSpoolRate <= 0.001f)
@@ -394,6 +449,10 @@ namespace KerbalActuators
             if (mirrorRotation)
                 rotationPerFrame *= -1.0f;
 
+            if (reverseThrust)
+                rotationPerFrame *= -1.0f;
+            
+
             rotorTransform.Rotate(rotationAxis * rotationPerFrame);
         }
 
@@ -426,6 +485,8 @@ namespace KerbalActuators
                 if (mirrorRotation)
                     rotationPerFrame *= -1.0f;
 
+                if (reverseThrust)
+                    rotationPerFrame *= -1.0f;
                 blurredRotorTransform.Rotate(rotationAxis * rotationPerFrame);
             }
 
@@ -448,6 +509,9 @@ namespace KerbalActuators
                 if (mirrorRotation)
                     rotationPerFrame *= -1.0f;
 
+
+                if (reverseThrust)
+                    rotationPerFrame *= -1.0f;
                 rotorTransform.Rotate(rotationAxis * rotationPerFrame);
             }
         }
