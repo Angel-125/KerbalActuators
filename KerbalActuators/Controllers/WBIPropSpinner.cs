@@ -29,11 +29,11 @@ namespace KerbalActuators
     {
         // Localized name of forward thrust action
         [KSPField]
-        public string kForwardThrust = "Set Forward Thrust";
+        public string forwardThrustActionName = "Set Forward Thrust";
 
         // Localized name of reverse thrust action
         [KSPField]
-        public string kReverseThrust = "Set Reverse Thrust";
+        public string reverseThrustActionName = "Set Reverse Thrust";
 
         [KSPField(isPersistant = true)]
         public bool reverseThrust;
@@ -292,13 +292,13 @@ namespace KerbalActuators
             engine.thrustTransforms.Clear();
             if (reverseThrust)
             {
-                Events["ToggleThrustTransform"].guiName = Localizer.Format(kForwardThrust);
+                Events["ToggleThrustTransform"].guiName = Localizer.Format(forwardThrustActionName);
                 engine.thrustTransforms.Add(revThrustTransform);
             }
 
             else
             {
-                Events["ToggleThrustTransform"].guiName = Localizer.Format(kReverseThrust);
+                Events["ToggleThrustTransform"].guiName = Localizer.Format(reverseThrustActionName);
                 engine.thrustTransforms.Add(fwdThrustTransform);
             }
         }

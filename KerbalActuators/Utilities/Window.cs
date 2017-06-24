@@ -215,8 +215,6 @@ namespace KerbalActuators
                 HandleWindowEvents(resizeRect);
             }
 
-//            preventClickthrough();
-
             GUI.DragWindow();
         }
 
@@ -225,44 +223,9 @@ namespace KerbalActuators
         {
             bool mouseInWindow = windowPos.Contains(Input.mousePosition);
 
-            /*
-            if (mouseInWindow && !mouseDown && (Event.current.type == EventType.mouseDown || Event.current.type == EventType.MouseDown))
-            {
-                Debug.Log("FRED eating mouse event");
-                Event.current.Use();
-                mouseDown = true;
-            }
-
-            else if (mouseInWindow)
-            {
-                mouseDown = false;
-            }
-             */
-
             if (mouseInWindow && !lockedUI)
             {
                 lockedUI = true;
-
-                /*
-                //Context menus
-                UIPartActionWindow[] actionWindows = (UIPartActionWindow[])GameObject.FindObjectsOfType<UIPartActionWindow>();
-                UIPartActionWindow actionWindow;
-                if (actionWindows != null)
-                {
-                    Debug.Log("FRED locking action windows");
-                    for (int index = 0; index < actionWindows.Length; index++)
-                    {
-                        Debug.Log("FRED locking action window " + index);
-                        actionWindow = actionWindows[index];
-                        if (actionWindow.Display == UIPartActionWindow.DisplayType.Selected)
-                        {
-                            Debug.Log("FRED disabling window");
-                            actionWindow.enabled = false;
-//                            MonoUtilities.RefreshContextWindows(this.part);
-                        }
-                    }
-                }
-                 */
 
                 //Lock game controls
                 if (HighLogic.LoadedSceneIsFlight)

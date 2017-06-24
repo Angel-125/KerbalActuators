@@ -270,8 +270,6 @@ namespace KerbalActuators
                 }
 
                 foreach (string key in multiModeEngines.Keys)
-                    Debug.Log("FRED engine id key: " + key);
-                Debug.Log("FRED engineSwitcher.engineName: " + engineSwitcher.primaryEngineID);
 
                 engine = multiModeEngines[engineSwitcher.primaryEngineID];
                 return;

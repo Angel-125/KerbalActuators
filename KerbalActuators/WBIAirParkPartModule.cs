@@ -96,12 +96,10 @@ namespace KerbalActuators
             {
                 if (this.part.vessel != null)
                 {
-                    Debug.Log("FRED OnStart called");
                     part.force_activate();
                     ParkPosition = vessel.transform.position;
                     SetAltitudeToCurrent();
                     instance = this;
-                    Debug.Log("FRED instance set");
                 }
             }
         }
