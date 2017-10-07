@@ -5,7 +5,7 @@ C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Ass
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\KSPAssets.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\UnityEngine.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\UnityEngine.UI.dll
-C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\TrackIRUnity.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\KSPTrackIR.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Mono.Cecil.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\TDx.TDxInput.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Mono.Security.dll
