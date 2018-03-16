@@ -7,7 +7,7 @@ using KSP.IO;
 using KSP.UI.Screens;
 
 /*
-Source code copyrighgt 2017, by Sirkut & Michael Billard (Angel-125)
+Source code copyrighgt 2017, by Michael Billard (Angel-125) & Sirkut
 License: GNU General Public License Version 3
 License URL: http://www.gnu.org/licenses/
 If you want to use this code, give me a shout on the KSP forums! :)
@@ -20,50 +20,264 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace KerbalActuators
 {
-    public enum WBIMagnetStates
-    {
-        None,
-        Initialized,
-        Activated,
-        Deactivated
-    }
-
+    /// <summary>
+    /// This class implements a magnet that's used for moving other parts around.
+    /// It does so by creating an attachment joint on the detected target.
+    /// Whenever the magnet moves around, so to does the target.
+    /// Special thanks to Sirkut for show how this is done!
+    /// NOTE: The part must have a trigger collider to detect when the magnet
+    /// touches a target part.
+    /// </summary>
     [KSPModule("Magnet")]
     public class WBIMagnetController : PartModule, IServoController
     {
+        #region Constants and user strings
         const int kPanelHeight = 70;
         const string kRequiredResource = "ElectricCharge";
 
+        public static string kMagnetActivated = "Magnet activated";
+        public static string kTargetFound = "<color=white><b>Target: </b>{0}</color>";
+        public static string kTargetNotFound = "<color=white><b>Target: </b>None</color>";
+        public static string kStatus = "<color=white><b>Status: </b>{0}</color>";
+        public static string kStatusOn = "On";
+        public static string kStatusOff = "Off";
+        public static string kStatusAttached = "Attached";
+        public static string kStatusInsufficientEC = "Insufficient E.C.";
+        #endregion
+
+        #region Fields
+        /// <summary>
+        /// Flag to indicate if we should operate in debug mode
+        /// </summary>
         [KSPField]
         public bool debugMode;
 
+        /// <summary>
+        /// How much ElectricCharge per second is required to operate the magnet.
+        /// </summary>
         [KSPField]
-        public float ecPerSec = 5.0f;
+        public float ecPerSec = 0f;
 
+        /// <summary>
+        /// Name of the magnet transform in the 3D mesh.
+        /// </summary>
         [KSPField]
         public string magnetTransformName = "magnetTransform";
 
+        /// <summary>
+        /// Servo group ID. Default is "Magnet"
+        /// </summary>
         [KSPField]
-        public float attachRange = 0.5f;
+        public string groupID = "Magnet";
 
-        [KSPField(guiName = "Ray", guiActive = true)]
-        public string rayInfo;
+        /// <summary>
+        /// Name of the target detected via the trigger
+        /// </summary>
+        [KSPField(guiName = "Target", guiActive = true)]
+        public string targetName;
 
+        /// <summary>
+        /// Name of the effect to play when the magnet attaches to a part.
+        /// </summary>
         [KSPField]
-        public bool drawAttachRay = true;
+        public string attachEffectName = string.Empty;
 
+        /// <summary>
+        /// Name of the effect to play when the magnet detaches from a part.
+        /// </summary>
+        [KSPField]
+        public string detachEffectName = string.Empty;
+
+        /// <summary>
+        /// Name of the effect to play while the magnet is activated.
+        /// </summary>
+        [KSPField]
+        public string runningEffectName = string.Empty;
+
+        /// <summary>
+        /// Field to indicate whether or not the magnet is on.
+        /// You won't pick up parts with the magnet turned off...
+        /// </summary>
+        [KSPField(guiName = "Magnet", isPersistant = true, guiActiveEditor = false, guiActive = true)]
+        [UI_Toggle(enabledText = "On", disabledText = "Off")]
+        public bool magnetActivated;
+
+        [KSPField(guiActive = true, guiName = "Magnet Status")]
+        public string status = string.Empty;
+        #endregion
+
+        #region Housekeeping
         Vector2 scrollVector = new Vector2();
         GUILayoutOption[] panelOptions = new GUILayoutOption[] { GUILayout.Height(kPanelHeight) };
-        GameObject magnetObject;
-        GameObject targetObject;
-        Part targetPart;
-        Rigidbody magnetRigidBody;
-        Rigidbody targetRigidBody;
-        ConfigurableJoint attachmentJoint;
-        bool magnetIsReady = false;
-        int layerMask = 0;
-        bool isConnected;
-        Transform magnetTransform = null;
+
+        protected Part targetPart;
+        protected Rigidbody magnetRigidBody;
+        protected ConfigurableJoint attachmentJoint;
+        protected Transform magnetTransform = null;
+        #endregion
+
+
+        #region API
+        public override void OnStart(PartModule.StartState state)
+        {
+            base.OnStart(state);
+            if (!HighLogic.LoadedSceneIsFlight)
+                return;
+
+            magnetTransform = part.FindModelTransform(magnetTransformName);
+
+            //Setup effects
+            if (!string.IsNullOrEmpty(detachEffectName))
+                this.part.Effect(detachEffectName, 1.0f);
+            if (!string.IsNullOrEmpty(runningEffectName))
+                this.part.Effect(runningEffectName, -1.0f);
+            if (!string.IsNullOrEmpty(detachEffectName))
+                this.part.Effect(detachEffectName, -1.0f);
+        }
+
+        public void OnCollisionEnter(Collision collision)
+        {
+            if (!HighLogic.LoadedSceneIsFlight)
+                return;
+
+            UpdateTargetData(collision);
+        }
+
+        public void OnCollisionStay(Collision collision)
+        {
+            if (!HighLogic.LoadedSceneIsFlight)
+                return;
+
+            UpdateTargetData(collision);
+        }
+
+        /// <summary>
+        /// Determines the target part based upon the supplied Collision object.
+        /// If the magnet is on and the attachment joint hasn't been created, then
+        /// it creates the attachment joint. Othwerwise, if the magnet is off
+        /// and the attachment joint is created, then it removes the joint.
+        /// </summary>
+        /// <param name="collision">A Collision object containing collision data. Usually comes from an OnCollision event.</param>
+        public virtual void UpdateTargetData(Collision collision)
+        {
+            //Get the target part
+            GameObject targetObject = collision.collider.gameObject;
+            targetPart = targetObject.transform.GetComponentInParent<Part>();
+            if (targetPart == null)
+            {
+                targetName = "";
+                return;
+            }
+
+            //Make sure we're not colliding with the vessel
+            if (this.part.vessel.ContainsCollider(collision.collider))
+            {
+                targetName = "";
+                return;
+            }
+
+            //Update target name
+            targetName = targetPart.partInfo.title;
+
+            //If the magnet is on and we need to create the attachment joint then do so.
+            if (magnetActivated && attachmentJoint == null)
+                CreateAttachmentJoint();
+            else if (!magnetActivated && attachmentJoint != null)
+                RemoveAttachmentJoint();
+        }
+
+        /// <summary>
+        /// Creates the attachment joint if there is a target part and we have a magnetTransform.
+        /// </summary>
+        public virtual void CreateAttachmentJoint()
+        {
+            if (targetPart == null || magnetTransform == null)
+            {
+                if (targetPart == null)
+                    DebugLog("No targetPart found");
+                if (magnetTransform == null)
+                    DebugLog("No magnetTransform found");
+                return;
+            }
+
+            magnetRigidBody = magnetTransform.gameObject.AddComponent<Rigidbody>();
+            magnetRigidBody.isKinematic = true;
+
+            attachmentJoint = magnetTransform.gameObject.AddComponent<ConfigurableJoint>();
+
+            attachmentJoint.xMotion = ConfigurableJointMotion.Locked;
+            attachmentJoint.yMotion = ConfigurableJointMotion.Locked;
+            attachmentJoint.zMotion = ConfigurableJointMotion.Locked;
+
+            attachmentJoint.angularXMotion = ConfigurableJointMotion.Locked;
+            attachmentJoint.angularYMotion = ConfigurableJointMotion.Locked;
+            attachmentJoint.angularZMotion = ConfigurableJointMotion.Locked;
+
+            attachmentJoint.connectedBody = targetPart.Rigidbody;
+            DebugLog("Added attachment joint");
+
+            //Play the attachment effect
+            if (!string.IsNullOrEmpty(attachEffectName))
+                this.part.Effect(attachEffectName, 1.0f);
+        }
+
+        /// <summary>
+        /// Removes a previously created attachment joint.
+        /// </summary>
+        public virtual void RemoveAttachmentJoint()
+        {
+            if (attachmentJoint != null)
+            {
+                UnityEngine.Object.Destroy(attachmentJoint.GetComponent<ConfigurableJoint>());
+                DebugLog("Removed attachment joint");
+            }
+            if (magnetRigidBody != null)
+            {
+                UnityEngine.Object.Destroy(magnetRigidBody.GetComponent<Rigidbody>());
+                DebugLog("Removed magnet rigid body");
+            }
+
+            //Play the detach effect
+            if (!string.IsNullOrEmpty(detachEffectName))
+                this.part.Effect(detachEffectName, 1.0f);
+            if (!string.IsNullOrEmpty(runningEffectName))
+                this.part.Effect(runningEffectName, -1.0f);
+        }
+        #endregion
+
+        #region Helpers
+        public void FixedUpdate()
+        {
+            if (!HighLogic.LoadedSceneIsFlight)
+                return;
+
+            //Pay the EC cost if needed
+            if (ecPerSec > 0.0f && magnetActivated)
+            {
+                double ecPerFrame = ecPerSec * TimeWarp.fixedDeltaTime;
+                double amountObtained = this.part.RequestResource(kRequiredResource, ecPerFrame, ResourceFlowMode.ALL_VESSEL);
+                if ((amountObtained / ecPerFrame) < 0.999f)
+                {
+                    magnetActivated = false;
+                    status = kStatusInsufficientEC;
+                    return;
+                }
+            }
+
+            //Magnet status
+            if (magnetActivated && attachmentJoint != null)
+                status = kStatusAttached;
+            else if (magnetActivated && attachmentJoint == null)
+                status = kStatusOn;
+            else if (magnetActivated == false)
+                status = kStatusOff;
+
+            //Play the running effect
+            if (!string.IsNullOrEmpty(runningEffectName) && magnetActivated)
+                this.part.Effect(runningEffectName, 1.0f);
+            else if (!string.IsNullOrEmpty(runningEffectName))
+                this.part.Effect(runningEffectName, -1.0f);
+        }
 
         protected void DebugLog(string message)
         {
@@ -72,136 +286,7 @@ namespace KerbalActuators
 
             Debug.Log("[WBIMagnetController] - " + message);
         }
-
-        [KSPEvent(guiActive = true, guiName = "Magnet: Off", active = true, guiActiveUnfocused = true, unfocusedRange = 40f)]
-        public void MagnetToggle()
-        {
-            if (targetObject == null)
-                DebugLog("targetObject is null");
-            else
-                DebugLog("targetObject is not null");
-            if (targetObject != null && isConnected == false)
-            {
-                magnetRigidBody = magnetObject.AddComponent<Rigidbody>();
-                magnetRigidBody.isKinematic = true;
-
-                attachmentJoint = magnetObject.AddComponent<ConfigurableJoint>();
-
-                attachmentJoint.xMotion = ConfigurableJointMotion.Locked;
-                attachmentJoint.yMotion = ConfigurableJointMotion.Locked;
-                attachmentJoint.zMotion = ConfigurableJointMotion.Locked;
-
-                attachmentJoint.angularXMotion = ConfigurableJointMotion.Locked;
-                attachmentJoint.angularYMotion = ConfigurableJointMotion.Locked;
-                attachmentJoint.angularZMotion = ConfigurableJointMotion.Locked;
-
-                attachmentJoint.connectedBody = targetRigidBody;
-                isConnected = true;
-                Events["MagnetToggle"].guiName = "Magnet: On";
-                DebugLog("Created attachment joint");
-            }
-            else if (isConnected == true)
-            {
-                UnityEngine.Object.Destroy(attachmentJoint.GetComponent<ConfigurableJoint>());
-                UnityEngine.Object.Destroy(magnetRigidBody.GetComponent<Rigidbody>());
-                isConnected = false;
-                Events["MagnetToggle"].guiName = "Magnet: Off";
-            }
-        }
-
-        public override void OnStart(PartModule.StartState state)
-        {
-            base.OnStart(state);
-            if (HighLogic.LoadedSceneIsFlight)
-            {
-                magnetTransform = part.FindModelTransform(magnetTransformName);
-                if (magnetTransform != null)
-                {
-                    DebugLog("Found magnet transform");
-                    magnetObject = magnetTransform.gameObject;
-                    magnetIsReady = true;
-                }
-                else
-                {
-                    DebugLog("Magnet transform not found");
-                }
-            }
-        }
-
-        /*
-        public void OnCollisionEnter(Collision collision)
-        {
-            if (!HighLogic.LoadedSceneIsFlight)
-                return;
-            if (targetPart != null)
-                return;
-
-            targetObject = collision.collider.gameObject;
-            targetPart = targetObject.transform.GetComponentInParent<Part>();
-            if (targetPart != null)
-                rayInfo = targetPart.partInfo.title;
-            else
-                rayInfo = "";
-        }
-
-        public void OnCollisionStay(Collision collision)
-        {
-            if (!HighLogic.LoadedSceneIsFlight)
-                return;
-            if (targetPart != null)
-                return;
-
-            targetObject = collision.collider.gameObject;
-            targetPart = targetObject.transform.GetComponentInParent<Part>();
-            if (targetPart != null)
-                rayInfo = targetPart.partInfo.title;
-            else
-                rayInfo = "";
-        }
-
-        public void OnCollisionExit(Collision collision)
-        {
-            targetPart = null;
-            targetObject = null;
-        }
-        */
-
-        void FixedUpdate()
-        {
-            if (!HighLogic.LoadedSceneIsFlight)
-                return;
-            if (magnetTransform == null)
-                return;
-            if (isConnected)
-                return;
-
-            if (drawAttachRay)
-            {
-                //DebugDrawer.DebugLine(magnetTransform.position, magnetTransform.position + magnetTransform.forward * attachRange, Color.red);
-                //DrawLine
-            }
-
-            RaycastHit rayCastHit;
-            int tempLayerMask = ~layerMask;
-            if (Physics.Raycast(magnetTransform.position, magnetTransform.forward, out rayCastHit, attachRange, tempLayerMask))
-            {
-                rayInfo = rayCastHit.collider.gameObject.name.ToString();
-                try
-                {
-                    targetObject = rayCastHit.collider.gameObject;
-                    targetRigidBody = rayCastHit.rigidbody;
-                }
-                catch (Exception ex) 
-                { 
-                    DebugLog("Exception encountered while trying to get targetObject: " + ex.ToString());
-                }
-            }
-            else
-            {
-                rayInfo = "";
-                targetObject = null;
-            }
-        }
+        #endregion
 
         #region IServoController
         public void DrawControls()
@@ -210,6 +295,17 @@ namespace KerbalActuators
 
             GUILayout.BeginVertical();
 
+            //Magnet state
+            magnetActivated = GUILayout.Toggle(magnetActivated, kMagnetActivated);
+
+            //Target
+            if (string.IsNullOrEmpty(targetName))
+                GUILayout.Label(kTargetNotFound);
+            else
+                GUILayout.Label(string.Format(kTargetFound, targetName));
+
+            //Status
+            GUILayout.Label(string.Format(kStatus, status));
 
             GUILayout.EndVertical();
 
@@ -229,22 +325,26 @@ namespace KerbalActuators
         {
             ConfigNode node = new ConfigNode(WBIServoManager.SERVODATA_NODE);
 
+            node.AddValue("magnetActivated", magnetActivated);
 
             return node;
         }
 
         public void SetFromSnapshot(ConfigNode node)
         {
+            if (node.HasValue("magnetActivated"))
+                bool.TryParse(node.GetValue("magnetActivated"), out magnetActivated);
         }
 
         public bool IsMoving()
         {
-            return true;
+            //No special sauce here...
+            return false;
         }
 
         public string GetGroupID()
         {
-            return string.Empty;
+            return groupID;
         }
         #endregion
     }

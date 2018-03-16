@@ -60,7 +60,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\WBIMagnetController.cs" />
-    <Compile Include="InfernalRoboticsArms.cs" />
     <Compile Include="WBIAirParkPartModule.cs" />
     <Compile Include="GUI\HoverControlSetupGUI.cs" />
     <Compile Include="GUI\HoverVTOLGUI.cs" />
@@ -75,7 +74,6 @@
     <Compile Include="Utilities\WindowUtils.cs" />
     <Compile Include="GUI\WBIActuatorsGUIMgr.cs" />
     <Compile Include="Managers\WBIServoManager.cs" />
-    <Compile Include="Controllers\WBIMagnetControllerOrig.cs" />
     <Compile Include="Controllers\WBIAirParkController.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
