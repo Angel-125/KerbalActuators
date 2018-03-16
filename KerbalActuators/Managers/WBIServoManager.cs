@@ -57,6 +57,12 @@ namespace KerbalActuators
         [KSPField(isPersistant = true)]
         public int snapshotID = -1;
 
+        /// <summary>
+        /// Name of the effect to play while a servo controller is running
+        /// </summary>
+        [KSPField]
+        public string runningEffectName = string.Empty;
+
         protected ServoGUI servoGUI = new ServoGUI();
         protected IServoController[] servoControllers;
         protected List<ConfigNode> sequences = new List<ConfigNode>();
@@ -113,6 +119,10 @@ namespace KerbalActuators
                 snapshots = sequences[sequenceID].GetNodes(SNAPSHOT_NODE);
                 PlaySnapshot(snapshotID);
             }
+
+            //Setup effects
+            if (!string.IsNullOrEmpty(runningEffectName))
+                this.part.Effect(runningEffectName, -1.0f);
         }
 
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Toggle Servo GUI")]
@@ -133,21 +143,32 @@ namespace KerbalActuators
 
         public void FixedUpdate()
         {
-            if (managerState == EServoManagerStates.Locked)
-                return;
-            bool playNextSnapshot = true;
-
             //A sequence consists of a series of snapshots.
             //A snapshot is done when all the contollers are locked.
             //Play each snapshot in succession until we reach the end.
+            bool playNextSnapshot = true;
             for (int index = 0; index < servoControllers.Length; index++)
             {
                 if (servoControllers[index].IsMoving())
                 {
                     playNextSnapshot = false;
+
+                    //Play servo sound
+                    if (!string.IsNullOrEmpty(runningEffectName) && HighLogic.LoadedSceneIsFlight)
+                        this.part.Effect(runningEffectName, 1.0f);
                     break;
                 }
+
+                else
+                {
+                    //Stop servo sound.
+                    if (!string.IsNullOrEmpty(runningEffectName) && HighLogic.LoadedSceneIsFlight)
+                        this.part.Effect(runningEffectName, -1.0f);
+                }
             }
+
+            if (managerState == EServoManagerStates.Locked)
+                return;
 
             //If all servo controllers have completed their movement and we're just playing one
             //snapshot, then we're done.

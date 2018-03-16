@@ -32,7 +32,7 @@ namespace KerbalActuators
     public class WBIMagnetController : PartModule, IServoController
     {
         #region Constants and user strings
-        const int kPanelHeight = 70;
+        const int kPanelHeight = 120;
         const string kRequiredResource = "ElectricCharge";
 
         public static string kMagnetActivated = "Magnet activated";

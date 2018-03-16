@@ -462,7 +462,6 @@ namespace KerbalActuators
                     currentRotationAngle -= degPerUpdate;
                     if (currentRotationAngle < 0f)
                         currentRotationAngle = 360f - currentRotationAngle;
-
                     break;
             }
 
