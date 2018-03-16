@@ -26,6 +26,17 @@ namespace KerbalActuators
         PlayingSnapshot
     }
 
+    public interface IServoController
+    {
+        string GetGroupID();
+        void DrawControls();
+        void HideGUI();
+        int GetPanelHeight();
+        ConfigNode TakeSnapshot();
+        void SetFromSnapshot(ConfigNode node);
+        bool IsMoving();
+    }
+
     public class WBIServoManager : PartModule
     {
         public const string ICON_PATH = "WildBlueIndustries/001KerbalActuators/Icons/";
@@ -47,7 +58,7 @@ namespace KerbalActuators
         public int snapshotID = -1;
 
         protected ServoGUI servoGUI = new ServoGUI();
-        protected IRotationController[] servoControllers;
+        protected IServoController[] servoControllers;
         protected List<ConfigNode> sequences = new List<ConfigNode>();
         protected ConfigNode[] snapshots;
         protected ConfigNode currentSnapshot;
@@ -85,7 +96,7 @@ namespace KerbalActuators
             base.OnStart(state);
 
             //Find servo controllers
-            List<IRotationController> controllers = this.part.FindModulesImplementing<IRotationController>();
+            List<IServoController> controllers = this.part.FindModulesImplementing<IServoController>();
             servoControllers = controllers.ToArray();
 
             //Setup servo GUI & create home sequence if needed

@@ -19,6 +19,27 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace KerbalActuators
 {
+    public enum WBIThrustModes
+    {
+        Forward,
+        Reverse,
+        VTOL
+    }
+
+    public interface IThrustVectorController
+    {
+        void SetForwardThrust(WBIVTOLManager vtolManager);
+        void SetReverseThrust(WBIVTOLManager vtolManager);
+        void SetVTOLThrust(WBIVTOLManager vtolManager);
+        WBIThrustModes GetThrustMode();
+    }
+
+    public interface ICustomController
+    {
+        bool IsVisible();
+        void DrawCustomController();
+    }
+
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class WBIVTOLManager : MonoBehaviour
     {
@@ -35,6 +56,7 @@ namespace KerbalActuators
         public KeyCode codeDecreaseVSpeed = KeyCode.PageDown;
         public KeyCode codeZeroVSpeed = KeyCode.Delete;
 
+        public WBIThrustModes thrustMode;
         public bool hoverActive = false;
         public float verticalSpeed = 0f;
         public float verticalSpeedIncrements = 1f;
@@ -44,9 +66,21 @@ namespace KerbalActuators
         private IAirParkController airParkController;
         private IHoverController[] hoverControllers;
         private IRotationController[] rotationControllers;
-        private IPropSpinner[] propSpinners;
+        private IThrustVectorController[] thrustVectorControllers;
+        private ICustomController[] customControllers;
         private HoverVTOLGUI hoverGUI = new HoverVTOLGUI();
         private string hoverControlsPath;
+
+        #region API
+        public void FindControllers(Vessel vessel)
+        {
+            this.vessel = vessel;
+            FindHoverControllers();
+            FindRotationControllers();
+            FindAirParkControllers();
+            FindThrustVectorControllers();
+            FindCustomControllers();
+        }
 
         public void Start()
         {
@@ -55,6 +89,7 @@ namespace KerbalActuators
             GameEvents.onVesselChange.Add(VesselWasChanged);
             GameEvents.onStageActivate.Add(OnStageActivate);
 
+            hoverGUI = new HoverVTOLGUI();
             hoverGUI.vtolManager = this;
             hoverGUI.hoverSetupGUI.vtolManager = this;
 
@@ -63,6 +98,403 @@ namespace KerbalActuators
             //Get the current control code mappings
             hoverControlsPath = AssemblyLoader.loadedAssemblies.GetPathByType(typeof(WBIVTOLManager)) + "/VTOLControls.cfg";
             LoadControls();
+        }
+
+        public void ToggleGUI()
+        {
+            if (!hoverGUI.IsVisible())
+            {
+                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI);
+                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI.hoverSetupGUI);
+                ShowGUI();
+            }
+            else
+            {
+                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI);
+                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI.hoverSetupGUI);
+                hoverGUI.SetVisible(false);
+            }
+        }
+
+        public void ShowGUI()
+        {
+            FindControllers(FlightGlobals.ActiveVessel);
+
+            hoverGUI.canDrawParkingControls = airParkController != null ? true : false;
+            hoverGUI.canDrawHoverControls = hoverControllers != null ? true : false;
+            hoverGUI.canDrawRotationControls = rotationControllers != null ? true : false;
+            hoverGUI.canDrawThrustControls = thrustVectorControllers != null ? true : false;
+            hoverGUI.enginesActive = EnginesAreActive();
+            hoverGUI.canRotateMax = CanRotateMax();
+            hoverGUI.canRotateMin = CanRotateMin();
+
+            hoverGUI.SetVisible(true);
+        }
+
+        public void Update()
+        {
+            if (Input.GetKeyDown(codeDecreaseVSpeed))
+            {
+                DecreaseVerticalSpeed();
+                printSpeed();
+            }
+
+            if (Input.GetKeyDown(codeIncreaseVSpeed))
+            {
+                IncreaseVerticalSpeed();
+                printSpeed();
+            }
+
+            if (Input.GetKeyDown(codeZeroVSpeed))
+            {
+                KillVerticalSpeed();
+                printSpeed();
+            }
+
+            if (Input.GetKeyDown(codeToggleHover))
+            {
+                ToggleHover();
+
+                if (hoverActive)
+                    ScreenMessages.PostScreenMessage(new ScreenMessage("Hover ON", 1f, ScreenMessageStyle.UPPER_CENTER));
+                else
+                    ScreenMessages.PostScreenMessage(new ScreenMessage("Hover OFF", 1f, ScreenMessageStyle.UPPER_CENTER));
+            }
+        }
+
+        public void FixedUpdate()
+        {
+            if (hoverControllers == null)
+                return;
+            if (hoverControllers.Length == 0)
+                return;
+            if (!hoverActive)
+                return;
+
+            //This is crude but effective. What we do is jitter the engine throttle up and down to maintain desired vertical speed.
+            //It tends to vibrate the engines but they're ok. This will have to do until I can figure out the relation between
+            //engine.finalThrust, engine.maxThrust, and the force needed to make the craft hover.
+            float throttleState = 0;
+            if (FlightGlobals.ActiveVessel.verticalSpeed >= verticalSpeed)
+                throttleState = 0f;
+            else
+                throttleState = 1.0f;
+
+            for (int index = 0; index < hoverControllers.Length; index++)
+            {
+                hoverControllers[index].UpdateHoverState(throttleState);
+            }
+        }
+        #endregion
+
+        #region IAirParkController
+        public void FindAirParkControllers()
+        {
+            airParkController = FlightGlobals.ActiveVessel.FindPartModuleImplementing<IAirParkController>();
+        }
+
+        public bool IsParked()
+        {
+            if (airParkController == null)
+                return true;
+
+            return airParkController.IsParked();
+        }
+
+        public void TogglePark()
+        {
+            if (airParkController != null)
+                airParkController.TogglePark();
+        }
+
+        public string GetSituation()
+        {
+            if (airParkController != null)
+                return airParkController.GetSituation();
+            else
+                return "N/A";
+        }
+
+        public void SetPark(bool isParked)
+        {
+            if (airParkController != null)
+            {
+                airParkController.SetParking(isParked);
+            }
+        }
+        #endregion
+
+        #region IRotationController
+        public void FindRotationControllers()
+        {
+            List<IRotationController> controllers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<IRotationController>();
+            List<IRotationController> rotationControllerList = new List<IRotationController>();
+
+            //Find all the controllers that belong to the Engine list.
+            IRotationController[] rotationItems = controllers.ToArray();
+            for (int index = 0; index < rotationItems.Length; index++)
+            {
+                if (rotationItems[index].GetGroupID() == kEngineGroup)
+                    rotationControllerList.Add(rotationItems[index]);
+            }
+
+            if (rotationControllerList.Count > 0)
+                rotationControllers = rotationControllerList.ToArray();
+        }
+
+        public bool CanRotateMin()
+        {
+            if (rotationControllers == null || rotationControllers.Length == 0)
+                return false;
+
+            for (int index = 0; index < rotationControllers.Length; index++)
+            {
+                if (rotationControllers[index].CanRotateMin() == false)
+                    return false;
+            }
+
+            return true;
+        }
+
+        public bool CanRotateMax()
+        {
+            if (rotationControllers == null || rotationControllers.Length == 0)
+                return false;
+
+            for (int index = 0; index < rotationControllers.Length; index++)
+            {
+                if (rotationControllers[index].CanRotateMax() == false)
+                    return false;
+            }
+
+            return true;
+        }
+
+        public void RotateToMin()
+        {
+            if (rotationControllers == null || rotationControllers.Length == 0)
+                return;
+
+            for (int index = 0; index < rotationControllers.Length; index++)
+                rotationControllers[index].RotateMin(false);
+        }
+
+        public void RotateToMax()
+        {
+            if (rotationControllers == null || rotationControllers.Length == 0)
+                return;
+
+            for (int index = 0; index < rotationControllers.Length; index++)
+                rotationControllers[index].RotateMax(false);
+        }
+
+        public void RotateToNeutral()
+        {
+            if (rotationControllers == null || rotationControllers.Length == 0)
+                return;
+
+            for (int index = 0; index < rotationControllers.Length; index++)
+                rotationControllers[index].RotateNeutral(false);
+        }
+
+        public void IncreaseRotationAngle(float rotationDelta)
+        {
+            if (rotationControllers == null || rotationControllers.Length == 0)
+                return;
+
+            for (int index = 0; index < rotationControllers.Length; index++)
+                rotationControllers[index].RotateUp(rotationDelta);
+        }
+
+        public void DecreaseRotationAngle(float rotationDelta)
+        {
+            if (rotationControllers == null || rotationControllers.Length == 0)
+                return;
+
+            for (int index = 0; index < rotationControllers.Length; index++)
+                rotationControllers[index].RotateDown(rotationDelta);
+        }
+        #endregion
+
+        #region IHoverController
+        public void FindHoverControllers()
+        {
+            List<IHoverController> controllers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<IHoverController>();
+
+            if (controllers.Count > 0)
+                hoverControllers = controllers.ToArray();
+        }
+
+        public bool EnginesAreActive()
+        {
+            if (hoverControllers == null || hoverControllers.Length == 0)
+                return false;
+
+            for (int index = 0; index < hoverControllers.Length; index++)
+            {
+                if (hoverControllers[index].IsEngineActive() == false)
+                    return false;
+            }
+
+            return true;
+        }
+
+        public void StartEngines()
+        {
+            if (hoverControllers == null || hoverControllers.Length == 0)
+                return;
+
+            for (int index = 0; index < hoverControllers.Length; index++)
+                hoverControllers[index].StartEngine();
+        }
+
+        public void StopEngines()
+        {
+            if (hoverControllers == null || hoverControllers.Length == 0)
+                return;
+
+            if (hoverActive)
+                ToggleHover();
+
+            hoverGUI.enginesActive = false;
+
+            for (int index = 0; index < hoverControllers.Length; index++)
+                hoverControllers[index].StopEngine();
+        }
+
+        public void DecreaseVerticalSpeed(float amount = 1.0f)
+        {
+            if (hoverControllers.Length == 0)
+                return;
+            if (hoverActive == false)
+                ToggleHover();
+
+            verticalSpeed -= amount;
+
+            for (int index = 0; index < hoverControllers.Length; index++)
+                hoverControllers[index].SetVerticalSpeed(verticalSpeed);
+        }
+
+        public void IncreaseVerticalSpeed(float amount = 1.0f)
+        {
+            if (hoverControllers.Length == 0)
+                return;
+            if (hoverActive == false)
+                ToggleHover();
+
+            verticalSpeed += amount;
+
+            for (int index = 0; index < hoverControllers.Length; index++)
+                hoverControllers[index].SetVerticalSpeed(verticalSpeed);
+        }
+
+        public void KillVerticalSpeed()
+        {
+            if (hoverControllers.Length == 0)
+                return;
+            if (hoverActive == false)
+                ToggleHover();
+
+            verticalSpeed = 0f;
+
+            for (int index = 0; index < hoverControllers.Length; index++)
+                hoverControllers[index].KillVerticalSpeed();
+        }
+
+        public void ToggleHover()
+        {
+            if (hoverControllers.Length == 0)
+                return;
+            hoverActive = !hoverActive;
+            if (!hoverActive)
+                verticalSpeed = 0f;
+
+            //Set hover mode
+            //We actually DON'T want to calculate the throttle setting because other engines that aren't in hover mode might need it.
+            for (int index = 0; index < hoverControllers.Length; index++)
+            {
+                hoverControllers[index].SetHoverMode(hoverActive);
+            }
+            if (thrustVectorControllers != null)
+                thrustMode = thrustVectorControllers[0].GetThrustMode();
+        }
+        #endregion
+
+        #region IThrustVector
+        public void FindThrustVectorControllers()
+        {
+            List<IThrustVectorController> controllers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<IThrustVectorController>();
+            if (controllers == null)
+                return;
+            if (controllers.Count > 0)
+            {
+                thrustVectorControllers = controllers.ToArray();
+                thrustMode = thrustVectorControllers[0].GetThrustMode();
+            }
+        }
+
+        public void SetForwardThrust()
+        {
+            thrustMode = WBIThrustModes.Forward;
+            for (int index = 0; index < thrustVectorControllers.Length; index++)
+                thrustVectorControllers[index].SetForwardThrust(this);
+        }
+
+        public void SetReverseThrust()
+        {
+            thrustMode = WBIThrustModes.Reverse;
+            for (int index = 0; index < thrustVectorControllers.Length; index++)
+                thrustVectorControllers[index].SetReverseThrust(this);
+        }
+
+        public void SetVTOLThrust()
+        {
+            thrustMode = WBIThrustModes.VTOL;
+            for (int index = 0; index < thrustVectorControllers.Length; index++)
+                thrustVectorControllers[index].SetVTOLThrust(this);
+        }
+        #endregion
+
+        #region ICustomController
+        public void FindCustomControllers()
+        {
+            List<ICustomController> controllers = vessel.FindPartModulesImplementing<ICustomController>();
+            if (controllers.Count > 0)
+            {
+                customControllers = controllers.ToArray();
+                hoverGUI.customControllers = customControllers;
+            }
+
+            else
+            {
+                customControllers = null;
+                hoverGUI.customControllers = null;
+            }
+        }
+        #endregion
+
+        #region Helpers
+        public virtual void printSpeed()
+        {
+            ScreenMessages.PostScreenMessage(new ScreenMessage("Hover Climb Rate: " + verticalSpeed, 1f, ScreenMessageStyle.UPPER_CENTER));
+        }
+
+        public string LabelForKeyCode(KeyCode code)
+        {
+            switch (code)
+            {
+                case KeyCode.PageDown:
+                    return "PgDn";
+
+                case KeyCode.PageUp:
+                    return "PgUp";
+
+                case KeyCode.Delete:
+                    return "Del";
+
+                default:
+                    return code.ToString();
+            }
         }
 
         public void LoadControls()
@@ -173,7 +605,9 @@ namespace KerbalActuators
 
             saveControls();
         }
+        #endregion
 
+        #region GameEvents
         public void OnStageActivate(int stageID)
         {
             hoverGUI.enginesActive = EnginesAreActive();
@@ -188,403 +622,6 @@ namespace KerbalActuators
         {
             FindControllers(vessel);
         }
-
-        public void FindControllers(Vessel vessel)
-        {
-            this.vessel = vessel;
-            FindHoverControllers();
-            FindRotationControllers();
-            FindPropSpinners();
-            FindAirParkControllers();
-        }
-
-        public void FindAirParkControllers()
-        {
-            airParkController = vessel.FindPartModuleImplementing<IAirParkController>();
-        }
-
-        public void FindHoverControllers()
-        {
-            List<IHoverController> controllers = vessel.FindPartModulesImplementing<IHoverController>();
-
-            if (controllers.Count > 0)
-                hoverControllers = controllers.ToArray();
-        }
-
-        public void FindRotationControllers()
-        {
-            List<IRotationController> controllers = vessel.FindPartModulesImplementing<IRotationController>();
-            List<IRotationController> rotationControllerList = new List<IRotationController>();
-
-            //Find all the controllers that belong to the Engine list.
-            IRotationController[] rotationItems = controllers.ToArray();
-            for (int index = 0; index < rotationItems.Length; index++)
-            {
-                if (rotationItems[index].GetGroupID() == kEngineGroup)
-                    rotationControllerList.Add(rotationItems[index]);
-            }
-
-            if (rotationControllerList.Count > 0)
-                rotationControllers = rotationControllerList.ToArray();
-        }
-
-        public bool IsParked()
-        {
-            if (airParkController == null)
-                return true;
-
-            return airParkController.IsParked();
-        }
-
-        public void TogglePark()
-        {
-            if (airParkController != null)
-                airParkController.TogglePark();
-        }
-
-        public string GetSituation()
-        {
-            if (airParkController != null)
-                return airParkController.GetSituation();
-            else
-                return "N/A";
-        }
-
-        public void SetPark(bool isParked)
-        {
-            if (airParkController != null)
-            {
-                airParkController.SetParking(isParked);
-            }
-        }
-
-        public void FindPropSpinners()
-        {
-            List<IPropSpinner> spinners = vessel.FindPartModulesImplementing<IPropSpinner>();
-
-            if (spinners.Count > 0)
-                propSpinners = spinners.ToArray();
-        }
-
-        public bool CanRotateMin()
-        {
-            if (rotationControllers == null || rotationControllers.Length == 0)
-                return false;
-
-            for (int index = 0; index < rotationControllers.Length; index++)
-            {
-                if (rotationControllers[index].CanRotateMin() == false)
-                    return false;
-            }
-
-            return true;
-        }
-
-        public bool CanRotateMax()
-        {
-            if (rotationControllers == null || rotationControllers.Length == 0)
-                return false;
-
-            for (int index = 0; index < rotationControllers.Length; index++)
-            {
-                if (rotationControllers[index].CanRotateMax() == false)
-                    return false;
-            }
-
-            return true;
-        }
-
-        public void RotateToMin()
-        {
-            if (rotationControllers == null || rotationControllers.Length == 0)
-                return;
-
-            for (int index = 0; index < rotationControllers.Length; index++)
-                rotationControllers[index].RotateMin(false);
-        }
-
-        public void RotateToMax()
-        {
-            if (rotationControllers == null || rotationControllers.Length == 0)
-                return;
-
-            for (int index = 0; index < rotationControllers.Length; index++)
-                rotationControllers[index].RotateMax(false);
-        }
-
-        public void RotateToNeutral()
-        {
-            if (rotationControllers == null || rotationControllers.Length == 0)
-                return;
-
-            for (int index = 0; index < rotationControllers.Length; index++)
-                rotationControllers[index].RotateNeutral(false);
-        }
-
-        public void IncreaseRotationAngle(float rotationDelta)
-        {
-            if (rotationControllers == null || rotationControllers.Length == 0)
-                return;
-
-            for (int index = 0; index < rotationControllers.Length; index++)
-                rotationControllers[index].RotateUp(rotationDelta);
-        }
-
-        public void DecreaseRotationAngle(float rotationDelta)
-        {
-            if (rotationControllers == null || rotationControllers.Length == 0)
-                return;
-
-            for (int index = 0; index < rotationControllers.Length; index++)
-                rotationControllers[index].RotateDown(rotationDelta);
-        }
-
-        public void ToggleThrust()
-        {
-            if (propSpinners == null || propSpinners.Length == 0)
-                return;
-
-            for (int index = 0; index < propSpinners.Length; index++)
-            {
-                propSpinners[index].ToggleThrust();
-            }
-        }
-
-        public void SetForwardThrust()
-        {
-            if (propSpinners == null || propSpinners.Length == 0)
-                return;
-
-            for (int index = 0; index < propSpinners.Length; index++)
-                propSpinners[index].SetReverseThrust(false);
-        }
-
-        public void SetReverseThrust()
-        {
-            if (propSpinners == null || propSpinners.Length == 0)
-                return;
-
-            for (int index = 0; index < propSpinners.Length; index++)
-            {
-                propSpinners[index].SetReverseThrust(true);
-            }
-        }
-
-        public bool EnginesAreActive()
-        {
-            if (hoverControllers == null || hoverControllers.Length == 0)
-                return false;
-
-            for (int index = 0; index < hoverControllers.Length; index++)
-            {
-                if (hoverControllers[index].IsEngineActive() == false)
-                    return false;
-            }
-
-            return true;
-        }
-
-        public void StartEngines()
-        {
-            if (hoverControllers == null || hoverControllers.Length == 0)
-                return;
-
-            for (int index = 0; index < hoverControllers.Length; index++)
-                hoverControllers[index].StartEngine();
-        }
-
-        public void StopEngines()
-        {
-            if (hoverControllers == null || hoverControllers.Length == 0)
-                return;
-
-            if (hoverActive)
-                ToggleHover();
-
-            hoverGUI.enginesActive = false;
-
-            for (int index = 0; index < hoverControllers.Length; index++)
-                hoverControllers[index].StopEngine();
-        }
-
-        public void DecreaseVerticalSpeed(float amount = 1.0f)
-        {
-            if (hoverControllers.Length == 0)
-                return;
-            if (hoverActive == false)
-                ToggleHover();
-
-            verticalSpeed -= amount;
-
-            for (int index = 0; index < hoverControllers.Length; index++)
-                hoverControllers[index].SetVerticalSpeed(verticalSpeed);
-        }
-
-        public void IncreaseVerticalSpeed(float amount = 1.0f)
-        {
-            if (hoverControllers.Length == 0)
-                return;
-            if (hoverActive == false)
-                ToggleHover();
-
-            verticalSpeed += amount;
-
-            for (int index = 0; index < hoverControllers.Length; index++)
-                hoverControllers[index].SetVerticalSpeed(verticalSpeed);
-        }
-
-        public void KillVerticalSpeed()
-        {
-            if (hoverControllers.Length == 0)
-                return;
-            if (hoverActive == false)
-                ToggleHover();
-
-            verticalSpeed = 0f;
-
-            for (int index = 0; index < hoverControllers.Length; index++)
-                hoverControllers[index].KillVerticalSpeed();
-        }
-
-        public void ToggleHover()
-        {
-            if (hoverControllers.Length == 0)
-                return;
-            hoverActive = !hoverActive;
-            if (!hoverActive)
-                verticalSpeed = 0f;
-
-            //Set hover mode
-            //We actually DON'T want to calculate the throttle setting because other engines that aren't in hover mode might need it.
-            for (int index = 0; index < hoverControllers.Length; index++)
-            {
-                hoverControllers[index].SetHoverMode(hoverActive);
-            }
-        }
-
-        public void ToggleGUI()
-        {
-            if (!hoverGUI.IsVisible())
-            {
-                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI);
-                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI.hoverSetupGUI);
-                ShowGUI();
-            }
-            else
-            {
-                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI);
-                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI.hoverSetupGUI);
-                hoverGUI.SetVisible(false);
-            }
-        }
-
-        public void ShowGUI()
-        {
-            FindControllers(FlightGlobals.ActiveVessel);
-
-            if (airParkController != null)
-                hoverGUI.canDrawParkingControls = true;
-            else
-                hoverGUI.canDrawParkingControls = false;
-
-            if (hoverControllers != null && hoverControllers.Length > 0)
-                hoverGUI.canDrawHoverControls = true;
-            else
-                hoverGUI.canDrawHoverControls = false;
-
-            if (rotationControllers != null && rotationControllers.Length > 0)
-                hoverGUI.canDrawRotationControls = true;
-            else
-                hoverGUI.canDrawRotationControls = false;
-
-            if (propSpinners != null && propSpinners.Length > 0)
-                hoverGUI.canDrawThrustControls = true;
-            else
-                hoverGUI.canDrawThrustControls = false;
-
-            hoverGUI.enginesActive = EnginesAreActive();
-            hoverGUI.canRotateMax = CanRotateMax();
-            hoverGUI.canRotateMin = CanRotateMin();
-
-            hoverGUI.SetVisible(true);
-        }
-
-        public void Update()
-        {
-            if (Input.GetKeyDown(codeDecreaseVSpeed))
-            {
-                DecreaseVerticalSpeed();
-                printSpeed();
-            }
-
-            if (Input.GetKeyDown(codeIncreaseVSpeed))
-            {
-                IncreaseVerticalSpeed();
-                printSpeed();
-            }
-
-            if (Input.GetKeyDown(codeZeroVSpeed))
-            {
-                KillVerticalSpeed();
-                printSpeed();
-            }
-
-            if (Input.GetKeyDown(codeToggleHover))
-            {
-                ToggleHover();
-
-                if (hoverActive)
-                    ScreenMessages.PostScreenMessage(new ScreenMessage("Hover ON", 1f, ScreenMessageStyle.UPPER_CENTER));
-                else
-                    ScreenMessages.PostScreenMessage(new ScreenMessage("Hover OFF", 1f, ScreenMessageStyle.UPPER_CENTER));
-            }
-        }
-
-        public void FixedUpdate()
-        {
-            if (hoverControllers == null)
-                return;
-            if (hoverControllers.Length == 0)
-                return;
-            if (!hoverActive)
-                return;
-
-            //This is crude but effective. What we do is jitter the engine throttle up and down to maintain desired vertical speed.
-            //It tends to vibrate the engines but they're ok. This will have to do until I can figure out the relation between
-            //engine.finalThrust, engine.maxThrust, and the force needed to make the craft hover.
-            float throttleState = 0;
-            if (FlightGlobals.ActiveVessel.verticalSpeed >= verticalSpeed)
-                throttleState = 0f;
-            else
-                throttleState = 1.0f;
-
-            for (int index = 0; index < hoverControllers.Length; index++)
-            {
-                hoverControllers[index].UpdateHoverState(throttleState);
-            }
-        }
-
-        public virtual void printSpeed()
-        {
-            ScreenMessages.PostScreenMessage(new ScreenMessage("Hover Climb Rate: " + verticalSpeed, 1f, ScreenMessageStyle.UPPER_CENTER));
-        }
-
-        public string LabelForKeyCode(KeyCode code)
-        {
-            switch (code)
-            {
-                case KeyCode.PageDown:
-                    return "PgDn";
-
-                case KeyCode.PageUp:
-                    return "PgUp";
-
-                case KeyCode.Delete:
-                    return "Del";
-
-                default:
-                    return code.ToString();
-            }
-        }
+        #endregion
     }
 }

@@ -6,7 +6,7 @@ using UnityEngine;
 using KSP.IO;
 
 /*
-Source code copyright 2017, by Michael Billard (Angel-125)
+Source code copyright 2018, by Michael Billard (Angel-125)
 License: GNU General Public License Version 3
 License URL: http://www.gnu.org/licenses/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -54,6 +54,10 @@ namespace KerbalActuators
         [KSPEvent(guiActive = true, guiName = "Toggle Hover")]
         public virtual void ToggleHoverMode()
         {
+            setupEngines();
+            if (engine == null)
+                return;
+
             hoverActive = !hoverActive;
             if (hoverActive)
                 ActivateHover();
@@ -79,6 +83,8 @@ namespace KerbalActuators
         public virtual bool IsEngineActive()
         {
             getCurrentEngine();
+            if (engine == null)
+                return false;
 
             return engine.isOperational;
         }
@@ -246,6 +252,9 @@ namespace KerbalActuators
 
         protected void getCurrentEngine()
         {
+            if (engine == null)
+                setupEngines();
+
             //If we have multiple engines, make sure we have the current one.
             if (engineSwitcher != null)
             {

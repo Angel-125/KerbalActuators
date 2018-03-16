@@ -7,7 +7,7 @@ using KSP.IO;
 using KSP.UI.Screens;
 
 /*
-Source code copyrighgt 2017, by Michael Billard (Angel-125)
+Source code copyrighgt 2017, by Sirkut & Michael Billard (Angel-125)
 License: GNU General Public License Version 3
 License URL: http://www.gnu.org/licenses/
 If you want to use this code, give me a shout on the KSP forums! :)
@@ -20,10 +20,22 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace KerbalActuators
 {
-    public class WBIMagnetController : PartModule, IRotationController
+    public enum WBIMagnetStates
+    {
+        None,
+        Initialized,
+        Activated,
+        Deactivated
+    }
+
+    [KSPModule("Magnet")]
+    public class WBIMagnetController : PartModule, IServoController
     {
         const int kPanelHeight = 70;
         const string kRequiredResource = "ElectricCharge";
+
+        [KSPField]
+        public bool debugMode;
 
         [KSPField]
         public float ecPerSec = 5.0f;
@@ -31,38 +43,92 @@ namespace KerbalActuators
         [KSPField]
         public string magnetTransformName = "magnetTransform";
 
-        [KSPField(guiName = "Deploy Limit", isPersistant = true, guiActive = true, guiActiveEditor = true)]
-        [UI_FloatRange(stepIncrement = 1f, maxValue = 100f, minValue = 0f)]
-        public float magnetPercent = 100f;
+        [KSPField]
+        public float attachRange = 0.5f;
+
+        [KSPField(guiName = "Ray", guiActive = true)]
+        public string rayInfo;
 
         [KSPField]
-        public float magnetForce = 10.0f;
-
-        [KSPField(isPersistant = true, guiName = "Magnet")]
-        [UI_Toggle(enabledText = "On", disabledText = "Off")]
-        public bool magnetIsActive;
+        public bool drawAttachRay = true;
 
         Vector2 scrollVector = new Vector2();
         GUILayoutOption[] panelOptions = new GUILayoutOption[] { GUILayout.Height(kPanelHeight) };
-        Transform[] magnetTransforms = null;
-        Part targetPart = null;
-        ResourceBroker resourceBroker;
-        float unitsPerUpdate;
-//        FixedJoint fixedJoint;
-        float forcePerTransform;
+        GameObject magnetObject;
+        GameObject targetObject;
+        Part targetPart;
+        Rigidbody magnetRigidBody;
+        Rigidbody targetRigidBody;
+        ConfigurableJoint attachmentJoint;
+        bool magnetIsReady = false;
+        int layerMask = 0;
+        bool isConnected;
+        Transform magnetTransform = null;
 
-        public override void OnStart(StartState state)
+        protected void DebugLog(string message)
         {
-            base.OnStart(state);
+            if (!debugMode)
+                return;
 
-            magnetTransforms = this.part.FindModelTransforms(magnetTransformName);
-            if (magnetTransforms != null && magnetTransforms.Length > 0)
-                forcePerTransform = magnetForce / magnetTransforms.Length;
-
-            resourceBroker = new ResourceBroker();
-            unitsPerUpdate = ecPerSec * TimeWarp.fixedDeltaTime;
+            Debug.Log("[WBIMagnetController] - " + message);
         }
 
+        [KSPEvent(guiActive = true, guiName = "Magnet: Off", active = true, guiActiveUnfocused = true, unfocusedRange = 40f)]
+        public void MagnetToggle()
+        {
+            if (targetObject == null)
+                DebugLog("targetObject is null");
+            else
+                DebugLog("targetObject is not null");
+            if (targetObject != null && isConnected == false)
+            {
+                magnetRigidBody = magnetObject.AddComponent<Rigidbody>();
+                magnetRigidBody.isKinematic = true;
+
+                attachmentJoint = magnetObject.AddComponent<ConfigurableJoint>();
+
+                attachmentJoint.xMotion = ConfigurableJointMotion.Locked;
+                attachmentJoint.yMotion = ConfigurableJointMotion.Locked;
+                attachmentJoint.zMotion = ConfigurableJointMotion.Locked;
+
+                attachmentJoint.angularXMotion = ConfigurableJointMotion.Locked;
+                attachmentJoint.angularYMotion = ConfigurableJointMotion.Locked;
+                attachmentJoint.angularZMotion = ConfigurableJointMotion.Locked;
+
+                attachmentJoint.connectedBody = targetRigidBody;
+                isConnected = true;
+                Events["MagnetToggle"].guiName = "Magnet: On";
+                DebugLog("Created attachment joint");
+            }
+            else if (isConnected == true)
+            {
+                UnityEngine.Object.Destroy(attachmentJoint.GetComponent<ConfigurableJoint>());
+                UnityEngine.Object.Destroy(magnetRigidBody.GetComponent<Rigidbody>());
+                isConnected = false;
+                Events["MagnetToggle"].guiName = "Magnet: Off";
+            }
+        }
+
+        public override void OnStart(PartModule.StartState state)
+        {
+            base.OnStart(state);
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                magnetTransform = part.FindModelTransform(magnetTransformName);
+                if (magnetTransform != null)
+                {
+                    DebugLog("Found magnet transform");
+                    magnetObject = magnetTransform.gameObject;
+                    magnetIsReady = true;
+                }
+                else
+                {
+                    DebugLog("Magnet transform not found");
+                }
+            }
+        }
+
+        /*
         public void OnCollisionEnter(Collision collision)
         {
             if (!HighLogic.LoadedSceneIsFlight)
@@ -70,9 +136,12 @@ namespace KerbalActuators
             if (targetPart != null)
                 return;
 
-            GameObject colliderGO = collision.collider.gameObject;
-
-            targetPart = colliderGO.transform.GetComponentInParent<Part>();
+            targetObject = collision.collider.gameObject;
+            targetPart = targetObject.transform.GetComponentInParent<Part>();
+            if (targetPart != null)
+                rayInfo = targetPart.partInfo.title;
+            else
+                rayInfo = "";
         }
 
         public void OnCollisionStay(Collision collision)
@@ -82,83 +151,65 @@ namespace KerbalActuators
             if (targetPart != null)
                 return;
 
-            GameObject colliderGO = collision.collider.gameObject;
-
-            targetPart = colliderGO.transform.GetComponentInParent<Part>();
+            targetObject = collision.collider.gameObject;
+            targetPart = targetObject.transform.GetComponentInParent<Part>();
+            if (targetPart != null)
+                rayInfo = targetPart.partInfo.title;
+            else
+                rayInfo = "";
         }
 
         public void OnCollisionExit(Collision collision)
         {
             targetPart = null;
-        }
-
-        public void FixedUpdate()
-        {
-            if (magnetTransforms == null || magnetTransforms.Length == 0)
-                return;
-            if (!HighLogic.LoadedSceneIsFlight)
-                return;
-            if (!magnetIsActive)
-                return;
-            if (targetPart == null)
-                return;
-
-            /*
-            //Check power requirements
-            if (resourceBroker.AmountAvailable(this.part, kRequiredResource, TimeWarp.fixedDeltaTime, ResourceFlowMode.ALL_VESSEL) >= unitsPerUpdate)
-            {
-                resourceBroker.RequestResource(this.part, kRequiredResource, unitsPerUpdate, TimeWarp.fixedDeltaTime, ResourceFlowMode.ALL_VESSEL);
-            }
-
-            else
-            {
-                magnetIsActive = false;
-                return;
-            }
-             */
-
-            //Apply magnetic forces
-            float magneticForce = forcePerTransform * (magnetPercent / 100.0f);
-            for (int index = 0; index < magnetTransforms.Length; index++)
-            {
-                targetPart.AddForceAtPosition(magnetTransforms[index].forward.normalized * -magneticForce, magnetTransforms[index].transform.position);
-                this.part.AddForceAtPosition(magnetTransforms[index].forward.normalized * magneticForce, magnetTransforms[index].transform.position);
-            }
-        }
-
-        /*
-        protected void createAttachJoint()
-        {
-            if (fixedJoint != null)
-                return;
-            this.part.collider.isTrigger = true;
-
-            fixedJoint = this.part.gameObject.AddComponent<FixedJoint>();
-            fixedJoint.connectedBody = targetPart.Rigidbody;
-            fixedJoint.breakForce = magnetForceKN;
-            fixedJoint.breakTorque = magnetForceKN;
-            Debug.Log("attach joint created");
-        }
-
-        protected void removeAttachJoint()
-        {
-            if (fixedJoint == null)
-                return;
-            this.part.collider.isTrigger = false;
-
-            Destroy(fixedJoint);
-            fixedJoint = null;
-            Debug.Log("attach joint removed");
+            targetObject = null;
         }
         */
-        #region IRotationController
+
+        void FixedUpdate()
+        {
+            if (!HighLogic.LoadedSceneIsFlight)
+                return;
+            if (magnetTransform == null)
+                return;
+            if (isConnected)
+                return;
+
+            if (drawAttachRay)
+            {
+                //DebugDrawer.DebugLine(magnetTransform.position, magnetTransform.position + magnetTransform.forward * attachRange, Color.red);
+                //DrawLine
+            }
+
+            RaycastHit rayCastHit;
+            int tempLayerMask = ~layerMask;
+            if (Physics.Raycast(magnetTransform.position, magnetTransform.forward, out rayCastHit, attachRange, tempLayerMask))
+            {
+                rayInfo = rayCastHit.collider.gameObject.name.ToString();
+                try
+                {
+                    targetObject = rayCastHit.collider.gameObject;
+                    targetRigidBody = rayCastHit.rigidbody;
+                }
+                catch (Exception ex) 
+                { 
+                    DebugLog("Exception encountered while trying to get targetObject: " + ex.ToString());
+                }
+            }
+            else
+            {
+                rayInfo = "";
+                targetObject = null;
+            }
+        }
+
+        #region IServoController
         public void DrawControls()
         {
             GUILayout.BeginScrollView(scrollVector, panelOptions);
 
             GUILayout.BeginVertical();
 
-            magnetIsActive = GUILayout.Toggle(magnetIsActive, "Enable magnet");
 
             GUILayout.EndVertical();
 
@@ -167,8 +218,6 @@ namespace KerbalActuators
 
         public void HideGUI()
         {
-            Fields["magnetIsActive"].guiActive = true;
-            Fields["magnetPercent"].guiActive = true;
         }
 
         public int GetPanelHeight()
@@ -180,59 +229,22 @@ namespace KerbalActuators
         {
             ConfigNode node = new ConfigNode(WBIServoManager.SERVODATA_NODE);
 
-            node.AddValue("magnetIsActive", magnetIsActive);
 
             return node;
         }
 
         public void SetFromSnapshot(ConfigNode node)
         {
-            bool.TryParse(node.GetValue("magnetIsActive"), out magnetIsActive);
         }
 
         public bool IsMoving()
         {
-            return magnetIsActive;
+            return true;
         }
 
         public string GetGroupID()
         {
-            throw new NotImplementedException();
-        }
-
-        public bool CanRotateMax()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool CanRotateMin()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RotateDown(float rotationDelta)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RotateUp(float rotationDelta)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RotateNeutral(bool applyToCounterparts = true)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RotateMin(bool applyToCounterparts = true)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RotateMax(bool applyToCounterparts = true)
-        {
-            throw new NotImplementedException();
+            return string.Empty;
         }
         #endregion
     }

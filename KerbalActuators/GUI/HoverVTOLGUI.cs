@@ -33,6 +33,7 @@ namespace KerbalActuators
         public bool enginesActive;
         public bool canRotateMin;
         public bool canRotateMax;
+        public ICustomController[] customControllers;
 
         Texture settingsIcon;
         Texture leftArrow, doubleLeftArrow, rightArrow, doubleRightArrow, okButton, forwardIcon, upIcon, downIcon;
@@ -109,10 +110,69 @@ namespace KerbalActuators
                 GUILayout.EndHorizontal();
             }
 
-//            drawEngineControls();
-
             if (canDrawHoverControls)
                 drawHoverControls();
+
+            if (canDrawThrustControls)
+                drawThrustControls();
+
+            if (customControllers != null)
+            {
+                for (int index = 0; index < customControllers.Length; index++)
+                {
+                    if (customControllers[index].IsVisible())
+                        customControllers[index].DrawCustomController();
+                }
+            }
+        }
+
+        protected void drawThrustControls()
+        {
+            GUILayout.BeginVertical();
+
+            string fwdLabel;
+            string revLabel;
+            string vtolLabel;
+            switch (vtolManager.thrustMode)
+            {
+                default:
+                case WBIThrustModes.Forward:
+                    fwdLabel = "<color=yellow>FWD</color>";
+                    revLabel = "REV";
+                    vtolLabel = "VTOL";
+                    break;
+
+                case WBIThrustModes.Reverse:
+                    revLabel = "<color=yellow>REV</color>";
+                    fwdLabel = "FWD";
+                    vtolLabel = "VTOL";
+                    break;
+
+                case WBIThrustModes.VTOL:
+                    vtolLabel = "<color=yellow>VTOL</color>";
+                    fwdLabel = "FWD";
+                    revLabel = "REV";
+                    break;
+            }
+
+            //Forward Thrust
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(fwdLabel, rotateButtonOptions))
+                vtolManager.SetForwardThrust();
+
+            //Reverse Thrust
+            if (GUILayout.Button(revLabel, rotateButtonOptions))
+                vtolManager.SetReverseThrust();
+
+            //VTOL Thrust
+            if (GUILayout.Button(vtolLabel, rotateButtonOptions))
+                vtolManager.SetVTOLThrust();
+
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndVertical();
         }
 
         protected void drawParkingControls()
@@ -185,47 +245,6 @@ namespace KerbalActuators
             GUILayout.EndHorizontal();
         }
 
-        protected void drawEngineControls()
-        {
-            GUILayout.BeginVertical();
-            GUILayout.BeginHorizontal();
-
-            enginesActive = vtolManager.EnginesAreActive();
-            if (enginesActive)
-            {
-                if (GUILayout.Button("ENG\r\nOFF"))
-                {
-                    vtolManager.StopEngines();
-                }
-            }
-
-            else
-            {
-                if (GUILayout.Button("ENG\r\nON"))
-                {
-                    vtolManager.StartEngines();
-                }
-            }
-
-            if (canDrawThrustControls)
-            {
-                if (GUILayout.Button("THRUST\r\nF/R"))
-                    vtolManager.ToggleThrust();
-            }
-
-            //Coarse rotation (up, down, neutral)
-            if (canDrawRotationControls)
-                drawRotationControls();
-
-            GUILayout.EndHorizontal();
-
-            //Fine tune rotation controls
-            if (canDrawRotationControls)
-                drawRotationFineTuneControls();
-
-            GUILayout.EndVertical();
-        }
-
         protected void drawHoverControls()
         {
             GUILayout.BeginVertical();
@@ -239,12 +258,16 @@ namespace KerbalActuators
             if (vtolManager.hoverActive)
             {
                 if (GUILayout.Button("<color=yellow>HOVR</color>\r\n"))
+                {
                     vtolManager.ToggleHover();
+                }
             }
             else
             {
                 if (GUILayout.Button("HOVR\r\n"))
+                {
                     vtolManager.ToggleHover();
+                }
             }
             GUILayout.Label(vtolManager.codeToggleHover.ToString());
             GUILayout.EndVertical();

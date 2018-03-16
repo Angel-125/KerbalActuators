@@ -51,7 +51,7 @@ namespace KerbalActuators
         public static Texture editIcon = null;
         public static Texture helpIcon = null;
 
-        public IRotationController[] servoControllers;
+        public IServoController[] servoControllers;
         public int maxWindowHeight = 600;
         public List<ConfigNode> sequences = new List<ConfigNode>();
         public WBIServoManager servoManager;

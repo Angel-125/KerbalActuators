@@ -7,7 +7,7 @@ using KSP.IO;
 using System.Text.RegularExpressions;
 
 /*
-Source code copyright 2017, by Michael Billard (Angel-125)
+Source code copyright 2018, by Michael Billard (Angel-125)
 License: GNU General Public License Version 3
 License URL: http://www.gnu.org/licenses/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
@@ -30,15 +30,8 @@ namespace KerbalActuators
 
     public delegate void RotatorMirroredEvent(bool isMirrored);
 
-    public interface IRotationController
+    public interface IRotationController : IServoController
     {
-        string GetGroupID();
-        void DrawControls();
-        void HideGUI();
-        int GetPanelHeight();
-        ConfigNode TakeSnapshot();
-        void SetFromSnapshot(ConfigNode node);
-        bool IsMoving();
         bool CanRotateMax();
         bool CanRotateMin();
         void RotateDown(float rotationDelta);
