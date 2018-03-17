@@ -115,6 +115,12 @@ namespace KerbalActuators
         public int rotationStateInt = 0;
         public ERotationStates rotationState = ERotationStates.Locked;
 
+        /// <summary>
+        /// Name of the effect to play while a servo controller is running
+        /// </summary>
+        [KSPField]
+        public string runningEffectName = string.Empty;
+
         public event RotatorMirroredEvent onRotatorMirrored;
         
         protected Transform rotationTarget = null;
@@ -448,7 +454,10 @@ namespace KerbalActuators
         public virtual void FixedUpdate()
         {
             if (rotationState == ERotationStates.Locked)
+            {
+                this.part.Effect("runningServo", -1.0f);
                 return;
+            }
 
             //calculate the new rotation angle
             switch (rotationState)
@@ -456,12 +465,16 @@ namespace KerbalActuators
                 case ERotationStates.RotatingUp:
                     currentRotationAngle += degPerUpdate;
                     currentRotationAngle = currentRotationAngle % 360.0f;
+//                    if (onServoMoving != null)
+//                        onServoMoving(this);
                     break;
 
                 case ERotationStates.RotatingDown:
                     currentRotationAngle -= degPerUpdate;
                     if (currentRotationAngle < 0f)
                         currentRotationAngle = 360f - currentRotationAngle;
+//                    if (onServoMoving != null)
+//                        onServoMoving(this);
                     break;
             }
 
@@ -558,13 +571,21 @@ namespace KerbalActuators
             }
 
             if (GUILayout.RepeatButton("<"))
+            {
                 RotateDown(rotationDegPerSec * TimeWarp.fixedDeltaTime);
+                if (!string.IsNullOrEmpty(runningEffectName))
+                    this.part.Effect(runningEffectName, 1.0f);
+            }
 
             if (GUILayout.Button("0"))
                 RotateToNeutral();
 
             if (GUILayout.RepeatButton(">"))
+            {
                 RotateUp(rotationDegPerSec * TimeWarp.fixedDeltaTime);
+                if (!string.IsNullOrEmpty(runningEffectName))
+                    this.part.Effect(runningEffectName, 1.0f);
+            }
 
             if (maxRotateAngle != -1.0f)
             {

@@ -147,26 +147,22 @@ namespace KerbalActuators
             //A snapshot is done when all the contollers are locked.
             //Play each snapshot in succession until we reach the end.
             bool playNextSnapshot = true;
+            bool servoIsMoving = false;
             for (int index = 0; index < servoControllers.Length; index++)
             {
                 if (servoControllers[index].IsMoving())
                 {
                     playNextSnapshot = false;
-
-                    //Play servo sound
-                    if (!string.IsNullOrEmpty(runningEffectName) && HighLogic.LoadedSceneIsFlight)
-                        this.part.Effect(runningEffectName, 1.0f);
+                    servoIsMoving = true;
                     break;
-                }
-
-                else
-                {
-                    //Stop servo sound.
-                    if (!string.IsNullOrEmpty(runningEffectName) && HighLogic.LoadedSceneIsFlight)
-                        this.part.Effect(runningEffectName, -1.0f);
                 }
             }
 
+            //Play servo sound
+            if (!string.IsNullOrEmpty(runningEffectName) && HighLogic.LoadedSceneIsFlight)
+                this.part.Effect(runningEffectName, servoIsMoving == true ? 1.0f : -1.0f, -1);
+
+            //Nothing more to do if we're not playing a snapshot.
             if (managerState == EServoManagerStates.Locked)
                 return;
 
