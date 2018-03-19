@@ -26,34 +26,91 @@ namespace KerbalActuators
         PlayingSnapshot
     }
 
+    #region IServoController
+    /// <summary>
+    /// Generic servo controller interface
+    /// </summary>
     public interface IServoController
     {
+        /// <summary>
+        /// Specifies the group identifier string for the servo controller. Enables you to have servos in distinct groups like an engine and an arm, on the same part.
+        /// </summary>
+        /// <returns>A string containing the identifier</returns>
         string GetGroupID();
+
+        /// <summary>
+        /// Tells the servo to draw its GUI controls
+        /// </summary>
         void DrawControls();
+
+        /// <summary>
+        /// Tells the servo to hide its part action window controls
+        /// </summary>
         void HideGUI();
+
+        /// <summary>
+        /// Asks for the height of the GUI panel
+        /// </summary>
+        /// <returns>An int containing the height of the panel</returns>
         int GetPanelHeight();
+
+        /// <summary>
+        /// Tells the servo to take a snapshot of its current state. This is used to produce sequences for the servo.
+        /// </summary>
+        /// <returns>A SERVODATA_NODE ConfigNode containing the current state of the servo</returns>
         ConfigNode TakeSnapshot();
+
+        /// <summary>
+        /// Instructs the servo to update its current state by parsing the supplied ConfigNode.
+        /// </summary>
+        /// <param name="node">A SERVODATA_NODE ConfigNode containing the desired servo state.</param>
         void SetFromSnapshot(ConfigNode node);
+
+        /// <summary>
+        /// Indicates whether or not the servo controller is moving in some way.
+        /// </summary>
+        /// <returns>True if moving, false if not.</returns>
         bool IsMoving();
     }
+    #endregion
 
+    /// <summary>
+    /// The Servo Manager is designed to manage the states of one or more servos located in the part. The part module should be placed after the last servo controller part module in the config file.
+    /// The manager is responsible for presenting the individual servo GUI panels as well as the GUI needed to create, load, update, delete, and play various sequences. These sequences are a way to 
+    /// programmatically control the positioning of various servos without having to manually enter in their positions.
+    /// </summary>
     public class WBIServoManager : PartModule
     {
+        #region Constants
         public const string ICON_PATH = "WildBlueIndustries/001KerbalActuators/Icons/";
         public const string SERVODATA_NODE = "SERVODATA";
         public const string SNAPSHOT_NODE = "SNAPSHOT";
         public const string SEQUENCE_NODE = "SEQUENCE";
-        const string kHomeSequenceName = "Home";
+        public const string kHomeSequenceName = "Home";
+        #endregion
 
+        #region Fields
+        /// <summary>
+        /// Maximum height of the GUI
+        /// </summary>
         [KSPField]
         public int maxWindowHeight = 600;
 
+        /// <summary>
+        /// Current state of the manager
+        /// </summary>
         [KSPField(isPersistant = true)]
-        public int managerStateID;
+        public EServoManagerStates managerState;
 
+        /// <summary>
+        /// Current sequence that's being played.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public int sequenceID = -1;
 
+        /// <summary>
+        /// Current snapshot 
+        /// </summary>
         [KSPField(isPersistant = true)]
         public int snapshotID = -1;
 
@@ -62,15 +119,18 @@ namespace KerbalActuators
         /// </summary>
         [KSPField]
         public string runningEffectName = string.Empty;
+        #endregion
 
+        #region Housekeeping
         protected ServoGUI servoGUI = new ServoGUI();
         protected IServoController[] servoControllers;
         protected List<ConfigNode> sequences = new List<ConfigNode>();
         protected ConfigNode[] snapshots;
         protected ConfigNode currentSnapshot;
         protected ConfigNode[] snapshotServoData;
-        protected EServoManagerStates managerState = EServoManagerStates.Locked;
+        #endregion
 
+        #region Overrides
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
@@ -110,10 +170,9 @@ namespace KerbalActuators
                 servoControllers[index].HideGUI();
             
             //Check to see if we need to create the home sequence
-            createHomeSequence();
+            CreateHomeSequence();
 
             //If we're in the middle of playing a sequence, then start working the current snapshot.
-            managerState = (EServoManagerStates)managerStateID;
             if (managerState == EServoManagerStates.PlayingSequence && sequenceID < sequences.Count)
             {
                 snapshots = sequences[sequenceID].GetNodes(SNAPSHOT_NODE);
@@ -123,22 +182,6 @@ namespace KerbalActuators
             //Setup effects
             if (!string.IsNullOrEmpty(runningEffectName))
                 this.part.Effect(runningEffectName, -1.0f);
-        }
-
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Toggle Servo GUI")]
-        public void ToggleGUI()
-        {
-            servoGUI.servoManager = this;
-            servoGUI.sequences = this.sequences;
-            servoGUI.maxWindowHeight = this.maxWindowHeight;
-            servoGUI.servoControllers = this.servoControllers;
-            servoGUI.SetVisible(!servoGUI.IsVisible());
-            servoGUI.WindowTitle = this.part.partInfo.title;
-
-            if (servoGUI.IsVisible())
-                WBIActuatorsGUIMgr.Instance.RegisterWindow(servoGUI);
-            else
-                WBIActuatorsGUIMgr.Instance.UnregisterWindow(servoGUI);
         }
 
         public void FixedUpdate()
@@ -171,7 +214,6 @@ namespace KerbalActuators
             if (playNextSnapshot && managerState == EServoManagerStates.PlayingSnapshot)
             {
                 managerState = EServoManagerStates.Locked;
-                managerStateID = (int)managerState;
                 return;
             }
 
@@ -191,11 +233,30 @@ namespace KerbalActuators
                 {
                     snapshotID = -1;
                     managerState = EServoManagerStates.Locked;
-                    managerStateID = (int)managerState;
                 }
             }
         }
+        #endregion
 
+        #region API
+        /// <summary>
+        /// This event shows or hides the servo manager GUI.
+        /// </summary>
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Toggle Servo GUI")]
+        public void ToggleGUI()
+        {
+            servoGUI.servoManager = this;
+            servoGUI.sequences = this.sequences;
+            servoGUI.maxWindowHeight = this.maxWindowHeight;
+            servoGUI.servoControllers = this.servoControllers;
+            servoGUI.SetVisible(!servoGUI.IsVisible());
+            servoGUI.WindowTitle = this.part.partInfo.title;
+        }
+
+        /// <summary>
+        /// Takes a snapshot of the current state of the servo controllers
+        /// </summary>
+        /// <returns>A SNAPSHOT ConfigNode containing the current state of the servo controllers</returns>
         public ConfigNode TakeSnapshot()
         {
             ConfigNode snapshotNode = new ConfigNode(SNAPSHOT_NODE);
@@ -210,6 +271,10 @@ namespace KerbalActuators
             return snapshotNode;
         }
 
+        /// <summary>
+        /// Plays the desired sequence.
+        /// </summary>
+        /// <param name="sequenceIndex">An integer containing the desired sequence index.</param>
         public void PlaySequence(int sequenceIndex)
         {
             if (sequenceIndex < 0 || sequenceIndex > sequences.Count)
@@ -219,7 +284,6 @@ namespace KerbalActuators
             //A snapshot is done when all the contollers are locked.
             //Play each snapshot in succession until we reach the end.
             managerState = EServoManagerStates.PlayingSequence;
-            managerStateID = (int)managerState;
 
             sequenceID = sequenceIndex;
             snapshotID = 0;
@@ -228,10 +292,23 @@ namespace KerbalActuators
             PlaySnapshot(snapshotID);
         }
 
+        /// <summary>
+        /// Plays the home sequence. Home sequence is the "stored" state of the part's servos.
+        /// </summary>
+        public void PlayHomeSequence()
+        {
+            Debug.Log("[WBIServoManager] - Sequence count: " + sequences.Count);
+            Debug.Log("[WBIServoManager] - Playing home sequence");
+            PlaySequence(0);
+        }
+
+        /// <summary>
+        /// Plays a list of supplied snapshots
+        /// </summary>
+        /// <param name="snapshotList">A list containing SNAPSHOT ConfigNode objects to play.</param>
         public void PlaySnapshot(List<ConfigNode> snapshotList)
         {
             managerState = EServoManagerStates.PlayingSequence;
-            managerStateID = (int)managerState;
 
             snapshotID = 0;
 
@@ -239,10 +316,13 @@ namespace KerbalActuators
             PlaySnapshot(snapshotID);
         }
 
+        /// <summary>
+        /// Plays a single snapshot
+        /// </summary>
+        /// <param name="snapshotNode">A SNAPSHOT ConfigNode containing servo state information</param>
         public void PlaySnapshot(ConfigNode snapshotNode)
         {
             managerState = EServoManagerStates.PlayingSnapshot;
-            managerStateID = (int)managerState;
 
             currentSnapshot = snapshotNode;
 
@@ -255,6 +335,10 @@ namespace KerbalActuators
             }
         }
 
+        /// <summary>
+        /// Plays the desired snapshot from the current sequence
+        /// </summary>
+        /// <param name="snapshotIndex">An integer containing the desired snampshot index.</param>
         public void PlaySnapshot(int snapshotIndex)
         {
             snapshotID = snapshotIndex;
@@ -270,7 +354,19 @@ namespace KerbalActuators
             }
         }
 
-        protected void createHomeSequence()
+        /// <summary>
+        /// Adds a new sequence node to the sequence list.
+        /// </summary>
+        /// <param name="node">A SEQUENCE_NODE ConfigNode containing the sequence to add.</param>
+        public void AddSequence(ConfigNode node)
+        {
+            this.sequences.Add(node);
+        }
+
+        /// <summary>
+        /// Uses the current servo states to define the "Home" sequence. When the user presses the Home button, the part's servos will return the mesh transforms to this recorded state.
+        /// </summary>
+        public void CreateHomeSequence()
         {
             ConfigNode homeSequence = null;
             ConfigNode snapshot = null;
@@ -282,6 +378,7 @@ namespace KerbalActuators
             snapshot = new ConfigNode(SNAPSHOT_NODE);
             homeSequence = new ConfigNode(SEQUENCE_NODE);
             homeSequence.AddValue("name", kHomeSequenceName);
+            homeSequence.AddValue("partName", this.part.name);
             homeSequence.AddNode(snapshot);
 
             //Setup servo GUI & create home sequence if needed
@@ -291,6 +388,18 @@ namespace KerbalActuators
             //Add the home sequence
             sequences.Add(homeSequence);
         }
-    }
 
+        /// <summary>
+        /// Creates a home sequence from the supplied config node.
+        /// </summary>
+        /// <param name="node">A SEQUENCE_NOD ConfigNode containing the new home sequence</param>
+        public void CreateHomeSequence(ConfigNode node)
+        {
+            if (sequences.Count == 0)
+                sequences.Add(node);
+            else
+                sequences[0] = node;
+        }
+        #endregion
+    }
 }

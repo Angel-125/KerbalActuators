@@ -84,6 +84,11 @@ namespace KerbalActuators
         {
             this.visible = newValue;
 
+            if (this.visible)
+                WBIActuatorsGUIMgr.Instance.RegisterWindow(this);
+            else
+                WBIActuatorsGUIMgr.Instance.UnregisterWindow(this);
+
             if (!newValue)
             {
                 if (HighLogic.LoadedSceneIsFlight)

@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Text;
+using System.IO;
 using UnityEngine;
-using KSP.IO;
+using KSP.UI.Screens;
 
 /*
-Source code copyrighgt 2015, by Michael Billard (Angel-125)
+Source code copyrighgt 2018, by Michael Billard (Angel-125)
 License: GNU General Public License Version 3
 License URL: http://www.gnu.org/licenses/
 If you want to use this code, give me a shout on the KSP forums! :)
@@ -38,6 +40,8 @@ namespace KerbalActuators
         public const string kDirections5 = "<color=white>Move position down</color>";
         public const string kDirections6 = "<color=white>Play position</color>";
         public const string kDirections7 = "<color=white>Delete position</color>";
+        public const string kSavedFile = " saved to disk.";
+        public const string kConfirmOverwrite = "<color=yellow>File exists, overwrite?</color>";
         public static Texture homeIcon = null;
         public static Texture recordIcon = null;
         public static Texture cameraIcon = null;
@@ -50,6 +54,9 @@ namespace KerbalActuators
         public static Texture newIcon = null;
         public static Texture editIcon = null;
         public static Texture helpIcon = null;
+        public static Texture loadIcon = null;
+        public static Texture saveIcon = null;
+        public static Texture newHomeIcon = null;
 
         public IServoController[] servoControllers;
         public int maxWindowHeight = 600;
@@ -74,6 +81,12 @@ namespace KerbalActuators
         EEditStates editStatePos = EEditStates.None;
         ConfigNode pendingSequenceNode = null;
         int editIndexSeq = -1;
+        string saveFolder;
+        string saveSequencePath;
+        int saveSequenceIndex;
+        bool drawConfirmationDialog;
+        bool drawSequenceLoader;
+        List<string> sequenceFiles = new List<string>();
 
         public ServoGUI(string title = "", int height = 400, int width = 500) :
             base(title, width, height)
@@ -82,16 +95,19 @@ namespace KerbalActuators
             playbookScrollPos = new Vector2(0, 0);
             recorderScrollPos = new Vector2(0, 0);
 
+        }
+
+        public override void SetVisible(bool newValue)
+        {
+            base.SetVisible(newValue);
+
             //Grab the textures if needed.
             if (homeIcon == null)
             {
                 string baseIconURL = WBIServoManager.ICON_PATH;
-
-                string settingsPath = AssemblyLoader.loadedAssemblies.GetPathByType(typeof(ServoGUI)) + "/KerbalActuatorsSettings.cfg";
-                ConfigNode settingsNode = ConfigNode.Load(settingsPath);
+                ConfigNode settingsNode = GameDatabase.Instance.GetConfigNode("KerbalActuators");
                 if (settingsNode != null)
                     baseIconURL = settingsNode.GetValue("iconsFolder");
-
                 homeIcon = GameDatabase.Instance.GetTexture(baseIconURL + "House", false);
                 recordIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Record", false);
                 cameraIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Camera", false);
@@ -104,13 +120,14 @@ namespace KerbalActuators
                 newIcon = GameDatabase.Instance.GetTexture(baseIconURL + "NewIcon", false);
                 editIcon = GameDatabase.Instance.GetTexture(baseIconURL + "EditIcon", false);
                 helpIcon = GameDatabase.Instance.GetTexture(baseIconURL + "HelpIcon", false);
+                loadIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Load", false);
+                saveIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Save", false);
+                newHomeIcon = GameDatabase.Instance.GetTexture(baseIconURL + "NewHome", false);
             }
 
-        }
-
-        public override void SetVisible(bool newValue)
-        {
-            base.SetVisible(newValue);
+            //Determine the save folder & sequence files
+            getSaveFolder();
+            getSequenceFiles();
 
             if (newValue)
             {
@@ -127,13 +144,54 @@ namespace KerbalActuators
             }
         }
 
+        protected void getSequenceFiles()
+        {
+            string[] folderFiles = Directory.GetFiles(saveFolder);
+            sequenceFiles.Clear();
+            for (int index = 0; index < folderFiles.Length; index++)
+            {
+                if (folderFiles[index].Contains(servoManager.part.name))
+                    sequenceFiles.Add(folderFiles[index]);
+            }
+        }
+
+        protected void getSaveFolder()
+        {
+            // See: http://stackoverflow.com/questions/52797/how-do-i-get-the-path-of-the-assembly-the-code-is-in/283917#283917
+            DirectoryInfo directoryInfo = Directory.GetParent(Path.GetDirectoryName(Uri.UnescapeDataString(new UriBuilder(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).Path))).Parent.Parent;
+            string codeBase = System.Reflection.Assembly.GetExecutingAssembly().CodeBase;
+            UriBuilder uri = new UriBuilder(codeBase);
+            string path = Uri.UnescapeDataString(uri.Path);
+            string fullPath = Path.GetDirectoryName(path);
+
+            //Setup the root folder and thumbs folder.
+            if (fullPath.Contains("GameData"))
+            {
+                int index = fullPath.IndexOf("GameData");
+                fullPath = fullPath.Substring(0, index);
+                saveFolder = fullPath + "saves/" + HighLogic.SaveFolder + "/";
+            }
+            Debug.Log("[ServoGUI] - saveFolder: " + saveFolder);
+        }
+
         protected override void DrawWindowContents(int windowId)
         {
             GUILayout.BeginVertical();
             GUILayout.BeginHorizontal();
 
-            //Draw sequence playbook or recorder
-            if (recorderIsVisible)
+            //Confirmation dialog
+            if (drawConfirmationDialog)
+            {
+                drawConfirmationPanel();
+                GUILayout.EndHorizontal();
+                GUILayout.EndVertical();
+                return;
+            }
+
+            //Draw sequence playbook or load sequence or recorder
+            if (drawSequenceLoader)
+                drawSequenceLoaderPanel();
+            else if (recorderIsVisible)
                 drawRecorder();
             else
                 drawPlaybook();
@@ -142,6 +200,59 @@ namespace KerbalActuators
             drawServoControllers();
 
             GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
+        }
+
+        protected void drawConfirmationPanel()
+        {
+            GUILayout.BeginVertical();
+            GUILayout.Label(kConfirmOverwrite);
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button(okIcon, okCancelOptions))
+            {
+                drawConfirmationDialog = false;
+                sequences[saveSequenceIndex].Save(saveSequencePath);
+                ScreenMessages.PostScreenMessage(saveSequencePath + kSavedFile, 6.0f, ScreenMessageStyle.UPPER_CENTER);
+                getSequenceFiles();
+            }
+            if (GUILayout.Button(cancelIcon, okCancelOptions))
+            {
+                drawConfirmationDialog = false;
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
+
+            //Draw servo controllers
+            drawServoControllers();
+        }
+
+        protected void drawSequenceLoaderPanel()
+        {
+            //List of sequences
+            GUILayout.BeginVertical();
+            scrollPos = GUILayout.BeginScrollView(scrollPos, servoPanelOptions);
+
+            int totalFiles = sequenceFiles.Count;
+            string fileName;
+            int nameStartIndex;
+            for (int index = 0; index < totalFiles; index++)
+            {
+                nameStartIndex = sequenceFiles[index].LastIndexOf("/") + 1;
+                fileName = sequenceFiles[index].Substring(nameStartIndex);
+                if (GUILayout.Button(fileName))
+                {
+                    drawSequenceLoader = false;
+                    ConfigNode sequenceNode = ConfigNode.Load(sequenceFiles[index]);
+                    sequenceNode.name = WBIServoManager.SEQUENCE_NODE;
+                    servoManager.AddSequence(sequenceNode);
+                }
+            }
+
+            GUILayout.EndScrollView();
+
+            //Cancel button
+            if (GUILayout.Button(cancelIcon, okCancelOptions))
+                drawSequenceLoader = false;
             GUILayout.EndVertical();
         }
 
@@ -350,7 +461,7 @@ namespace KerbalActuators
             {
                 //First item in the sequences list is the home sequence.
                 if (sequences.Count >= 1)
-                    servoManager.PlaySequence(0);
+                    servoManager.PlayHomeSequence();
             }
             GUILayout.EndHorizontal();
 
@@ -456,6 +567,32 @@ namespace KerbalActuators
                 pendingSequenceNode = new ConfigNode(WBIServoManager.SEQUENCE_NODE);
                 sequenceName = string.Format("Sequence{0:n0}", sequences.Count - 1);
                 pendingSequenceNode.AddValue("name", sequenceName);
+                pendingSequenceNode.AddValue("partName", servoManager.part.name);
+            }
+
+            //Load a new sequece
+            if (GUILayout.Button(loadIcon, buttonOptions))
+            {
+                drawSequenceLoader = true;
+            }
+
+            //New home sequence
+            if (GUILayout.Button(newHomeIcon, buttonOptions))
+            {
+                ConfigNode homeSequence = null;
+                ConfigNode snapshot = null;
+                snapshot = new ConfigNode(WBIServoManager.SNAPSHOT_NODE);
+                homeSequence = new ConfigNode(WBIServoManager.SEQUENCE_NODE);
+                homeSequence.AddValue("name", WBIServoManager.kHomeSequenceName);
+                homeSequence.AddValue("partName", servoManager.part.name);
+                homeSequence.AddNode(snapshot);
+
+                //Take a snapshot
+                for (int index = 0; index < servoControllers.Length; index++)
+                    snapshot.AddNode(servoControllers[index].TakeSnapshot());
+
+                //Set the new home sequence
+                servoManager.CreateHomeSequence(homeSequence);
             }
 
             GUILayout.EndHorizontal();
@@ -490,6 +627,25 @@ namespace KerbalActuators
                     //Delete sequence
                     if (GUILayout.Button(deleteIcon, buttonOptions))
                         deleteIndex = index;
+
+                    //Save sequence
+                    if (GUILayout.Button(saveIcon, buttonOptions))
+                    {
+                        saveSequencePath = saveFolder + servoManager.part.name + "_" + sequences[index].GetValue("name") + ".txt";
+                        saveSequenceIndex = index;
+
+                        if (File.Exists(saveSequencePath))
+                        {
+                            drawConfirmationDialog = true;
+                        }
+
+                        else
+                        {
+                            sequences[index].Save(saveSequencePath);
+                            ScreenMessages.PostScreenMessage(saveSequencePath + kSavedFile, 6.0f, ScreenMessageStyle.UPPER_CENTER);
+                            getSequenceFiles();
+                        }
+                    }
 
                     GUILayout.EndHorizontal();
                 }

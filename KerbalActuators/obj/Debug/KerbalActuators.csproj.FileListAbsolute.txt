@@ -13,3 +13,9 @@ C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Red
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.csprojResolveAssemblyReference.cache
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.pdb
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\MarkdownSeparator.exe
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\xmldoc2md.xsl
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\RunMDSeparator.bat
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\RunPowershell.bat
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\xmldoc2md.ps1
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\xmldoc2md.xml

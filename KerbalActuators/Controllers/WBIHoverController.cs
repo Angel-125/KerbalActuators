@@ -18,39 +18,110 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace KerbalActuators
 {
+    #region IHoverController
+    /// <summary>
+    /// This interface is used by the WBIVTOLManager to control the hover state of an engine.
+    /// </summary>
     public interface IHoverController
     {
+        /// <summary>
+        /// Determines whether or not the engine is active.
+        /// </summary>
+        /// <returns>True if active, false if not.</returns>
         bool IsEngineActive();
+
+        /// <summary>
+        /// Tells the engine to start.
+        /// </summary>
         void StartEngine();
+
+        /// <summary>
+        /// Tells the engine to shut down.
+        /// </summary>
         void StopEngine();
+
+        /// <summary>
+        /// Updates the hover state with the current throttle value.
+        /// </summary>
+        /// <param name="throttleValue">A float containing the throttle value.</param>
         void UpdateHoverState(float throttleValue);
+
+        /// <summary>
+        /// Tells the controller to set the hover mode.
+        /// </summary>
+        /// <param name="isActive">True if hover mode is active, false if not.</param>
         void SetHoverMode(bool isActive);
+
+        /// <summary>
+        /// Sets the desired vertical speed of the craft.
+        /// </summary>
+        /// <param name="verticalSpeed">A float containing the desired vertical speed in meters/sec.</param>
         void SetVerticalSpeed(float verticalSpeed);
+
+        /// <summary>
+        /// Tells the hover controller to that the craft should be at 0 vertical speed.
+        /// </summary>
         void KillVerticalSpeed();
     }
 
+    /// <summary>
+    /// This event tells interested parties that the hover state has been updated.
+    /// </summary>
+    /// <param name="hoverActive">A flag to indicate whether or not the hover mode is active.</param>
+    /// <param name="verticalSpeed">A float value telling the interested party what the vertical speed is, in meters/second.</param>
     public delegate void HoverUpdateEvent(bool hoverActive, float verticalSpeed);
+    #endregion
 
+    /// <summary>
+    /// The WBIHoverController is designed to help engines figure out what thrust is needed to maintain a desired vertical speed. The hover controller can support multiple engines.
+    /// </summary>
     public class WBIHoverController : PartModule, IHoverController
     {
+        #region Fields
+        /// <summary>
+        /// Desired vertical speed. Increments in meters/sec.
+        /// </summary>
         [KSPField]
         public float verticalSpeedIncrements = 1f;
 
+        /// <summary>
+        /// The current vertical speed.
+        /// </summary>
         [KSPField(guiActive = true, guiName = "Vertical Speed")]
         public float verticalSpeed = 0f;
 
+        /// <summary>
+        /// A field to indicate whether or not the hover mode is active.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public bool hoverActive = false;
 
+        /// <summary>
+        /// A flag to indicate whether or not the Part Action Window GUI is active.
+        /// </summary>
         [KSPField]
         public bool guiVisible = true;
 
+        /// <summary>
+        /// A HoverUpdateEvent that's fired when the hover state changes.
+        /// </summary>
         public event HoverUpdateEvent onHoverUpdate;
-        public ModuleEnginesFX engine;
 
+        /// <summary>
+        /// The current engine to update during hover state updates.
+        /// </summary>
+        public ModuleEnginesFX engine;
+        #endregion
+
+        #region Housekeeping
         protected MultiModeEngine engineSwitcher;
         protected Dictionary<string, ModuleEnginesFX> multiModeEngines = new Dictionary<string, ModuleEnginesFX>();
+        #endregion
 
+        #region API
+        /// <summary>
+        /// This event toggles the hover mode.
+        /// </summary>
         [KSPEvent(guiActive = true, guiName = "Toggle Hover")]
         public virtual void ToggleHoverMode()
         {
@@ -80,6 +151,10 @@ namespace KerbalActuators
             }
         }
 
+        /// <summary>
+        /// Determines whether or not the engine is active.
+        /// </summary>
+        /// <returns>True if the engine is active, false if not.</returns>
         public virtual bool IsEngineActive()
         {
             getCurrentEngine();
@@ -89,6 +164,9 @@ namespace KerbalActuators
             return engine.isOperational;
         }
 
+        /// <summary>
+        /// Tells the controller to start the engine.
+        /// </summary>
         public virtual void StartEngine()
         {
             getCurrentEngine();
@@ -98,6 +176,9 @@ namespace KerbalActuators
             engine.Activate();
         }
 
+        /// <summary>
+        /// Tells the hover controller to stop the engine.
+        /// </summary>
         public virtual void StopEngine()
         {
             getCurrentEngine();
@@ -107,6 +188,10 @@ namespace KerbalActuators
             engine.Shutdown();
         }
 
+        /// <summary>
+        /// Tells the hover controller to update its hover state.
+        /// </summary>
+        /// <param name="throttleValue">A float containing the throttle value to account for during the hover state</param>
         public virtual void UpdateHoverState(float throttleValue)
         {
             getCurrentEngine();
@@ -125,6 +210,10 @@ namespace KerbalActuators
             engine.currentThrottle = throttleState * engine.thrustPercentage / 100.0f;
         }
 
+        /// <summary>
+        /// Sets the hover state in the controller.
+        /// </summary>
+        /// <param name="isActive">True if hover mode is active, false if not.</param>
         public virtual void SetHoverMode(bool isActive)
         {
             hoverActive = isActive;
@@ -135,6 +224,9 @@ namespace KerbalActuators
                 DeactivateHover();
         }
 
+        /// <summary>
+        /// This event increases the vertical speed by verticalSpeedIncrements (in meters/sec)/
+        /// </summary>
         [KSPEvent(guiActive = true, guiName = "Vertical Speed +")]
         public virtual void IncreaseVerticalSpeed()
         {
@@ -143,6 +235,9 @@ namespace KerbalActuators
             updateSymmetricalSpeeds();
         }
 
+        /// <summary>
+        /// This event decreases the vertical speed by verticalSpeedIncrements (in meters/sec).
+        /// </summary>
         [KSPEvent(guiActive = true, guiName = "Vertical Speed -")]
         public virtual void DecreaseVerticalSpeed()
         {
@@ -151,24 +246,40 @@ namespace KerbalActuators
             updateSymmetricalSpeeds();
         }
 
+        /// <summary>
+        /// This action toggles the hover mode.
+        /// </summary>
+        /// <param name="param">A KSPActionParam containing action state information.</param>
         [KSPAction("Toggle Hover")]
         public virtual void toggleHoverAction(KSPActionParam param)
         {
             ToggleHoverMode();
         }
 
+        /// <summary>
+        /// This action increases the vertical speed by verticalSpeedIncrements (in meters/sec).
+        /// </summary>
+        /// <param name="param">A KSPActionParam containing action state information.</param>
         [KSPAction("Vertical Speed +")]
         public virtual void increaseVerticalSpeed(KSPActionParam param)
         {
             IncreaseVerticalSpeed();
         }
 
+        /// <summary>
+        /// This action decreases the vertical speed by verticalSpeedIncrements (in meters/sec).
+        /// </summary>
+        /// <param name="param">A KSPActionParam containing action state information.</param>
         [KSPAction("Vertical Speed -")]
         public virtual void decreaseVerticalSpeed(KSPActionParam param)
         {
             DecreaseVerticalSpeed();
         }
 
+        /// <summary>
+        /// Sets the desired vertical speed in meters/sec.
+        /// </summary>
+        /// <param name="verticalSpeed">A float containing the vertical speed in meters/sec.</param>
         public virtual void SetVerticalSpeed(float verticalSpeed)
         {
             //Just set the vertical speed, don't print the new speed or inform symmetry counterparts.
@@ -178,6 +289,9 @@ namespace KerbalActuators
                 onHoverUpdate(hoverActive, verticalSpeed);
         }
 
+        /// <summary>
+        /// Sets the desired vertical speed to 0.
+        /// </summary>
         public virtual void KillVerticalSpeed()
         {
             verticalSpeed = 0f;
@@ -199,6 +313,10 @@ namespace KerbalActuators
             SetGUIVisible(guiVisible);
         }
 
+        /// <summary>
+        /// Show or hides the GUI controls in the Part Action Window.
+        /// </summary>
+        /// <param name="isVisible">True if the controls are visible, false if not.</param>
         public virtual void SetGUIVisible(bool isVisible)
         {
             guiVisible = isVisible;
@@ -208,12 +326,18 @@ namespace KerbalActuators
             Fields["verticalSpeed"].guiActive = isVisible;
         }
 
+        /// <summary>
+        /// Prints the vertical speed on the screen.
+        /// </summary>
         public virtual void printSpeed()
         {
             if (guiVisible)
                 ScreenMessages.PostScreenMessage(new ScreenMessage("Hover Climb Rate: " + verticalSpeed, 1f, ScreenMessageStyle.UPPER_CENTER));
         }
 
+        /// <summary>
+        /// Activates hover mode.
+        /// </summary>
         public virtual void ActivateHover()
         {
             hoverActive = true;
@@ -232,6 +356,9 @@ namespace KerbalActuators
                 onHoverUpdate(hoverActive, verticalSpeed);
         }
 
+        /// <summary>
+        /// Deactivates hover mode.
+        /// </summary>
         public virtual void DeactivateHover()
         {
             hoverActive = false;
@@ -249,7 +376,9 @@ namespace KerbalActuators
             if (onHoverUpdate != null)
                 onHoverUpdate(hoverActive, verticalSpeed);
         }
+        #endregion
 
+        #region Helpers
         protected void getCurrentEngine()
         {
             if (engine == null)
@@ -300,5 +429,6 @@ namespace KerbalActuators
                 }
             }
         }
+        #endregion
     }
 }

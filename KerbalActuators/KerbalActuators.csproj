@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Debug\xmldoc2md.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -60,7 +61,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\WBIMagnetController.cs" />
-    <Compile Include="WBIAirParkPartModule.cs" />
     <Compile Include="GUI\HoverControlSetupGUI.cs" />
     <Compile Include="GUI\HoverVTOLGUI.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -75,6 +75,28 @@
     <Compile Include="GUI\WBIActuatorsGUIMgr.cs" />
     <Compile Include="Managers\WBIServoManager.cs" />
     <Compile Include="Controllers\WBIAirParkController.cs" />
+    <Compile Include="Controllers\WBICameraController.cs" />
+    <Compile Include="GUI\WBICameraGUI.cs" />
+    <Compile Include="Controllers\WBILightController.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="MarkdownSeparator.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="xmldoc2md.xsl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="RunMDSeparator.bat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="RunPowershell.bat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="xmldoc2md.ps1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

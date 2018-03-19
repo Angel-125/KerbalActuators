@@ -28,8 +28,7 @@ namespace KerbalActuators
 
         public void Awake()
         {
-            string settingsPath = AssemblyLoader.loadedAssemblies.GetPathByType(typeof(WBIVTOLAppButton)) + "/KerbalActuatorsSettings.cfg";
-            ConfigNode settingsNode = ConfigNode.Load(settingsPath);
+            ConfigNode settingsNode = GameDatabase.Instance.GetConfigNode("KerbalActuators");
             if (settingsNode == null)
             {
                 appIcon = GameDatabase.Instance.GetTexture(WBIServoManager.ICON_PATH + "VTOLAppButton", false);

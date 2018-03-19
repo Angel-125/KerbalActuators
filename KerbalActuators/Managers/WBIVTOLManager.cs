@@ -104,14 +104,14 @@ namespace KerbalActuators
         {
             if (!hoverGUI.IsVisible())
             {
-                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI);
-                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI.hoverSetupGUI);
+//                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI);
+//                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI.hoverSetupGUI);
                 ShowGUI();
             }
             else
             {
-                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI);
-                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI.hoverSetupGUI);
+//                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI);
+//                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI.hoverSetupGUI);
                 hoverGUI.SetVisible(false);
             }
         }

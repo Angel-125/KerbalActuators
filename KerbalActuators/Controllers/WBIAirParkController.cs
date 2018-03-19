@@ -20,42 +20,93 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace KerbalActuators
 {
+    #region IAirParkController
+    /// <summary>
+    /// This controller interface defines an air park controller. The controller lets you "park" a vessel in mid-air and treat it as if landed on the ground.
+    /// </summary>
     public interface IAirParkController
     {
+        /// <summary>
+        /// Sets the parking mode.
+        /// </summary>
+        /// <param name="parked">True if parked, false if not.</param>
         void SetParking(bool parked);
+
+        /// <summary>
+        /// Determines whether or not the vessel is parked.
+        /// </summary>
+        /// <returns>True if parked, false if not.</returns>
         bool IsParked();
+
+        /// <summary>
+        /// Toggles the parking state from parked to unparked.
+        /// </summary>
         void TogglePark();
+
+        /// <summary>
+        /// Returns the current situation of the vesel.
+        /// </summary>
+        /// <returns></returns>
         string GetSituation();
     }
+    #endregion
 
+    /// <summary>
+    /// This class is designed to let you "park" a vessel in mid-air and treat it as if landed on the ground.
+    /// </summary>
     public class WBIAirParkController : PartModule, IAirParkController
     {
+        #region Constants
         public const int kGForceFrameIgnore = 240;
         public const string kParkGuiName = "Enable Airpark";
         public const string kUnparkGuiName = "Disable Airpark";
         const bool kDebugMode = true;
+        #endregion
 
+        #region Fields
+        /// <summary>
+        /// Displays the current vessel situation. This is used in debug mode.
+        /// </summary>
         [KSPField(guiActive = kDebugMode, guiName = "Current Situation")]
         public string currentSituation;
 
+        /// <summary>
+        /// Displays the previous vessel situation. This is used in debug mode.
+        /// </summary>
         [KSPField(isPersistant = true, guiName = "Previous Situation", guiActive = kDebugMode)]
         public Vessel.Situations previousSituation;
 
+        /// <summary>
+        /// This flag indicates whether or not the vessel is parked.
+        /// </summary>
         [KSPField(isPersistant = true, guiActive = true, guiName = "Airpark Enabled")]
         public bool isParked;
 
+        /// <summary>
+        /// The altitude at which the vessel is parked.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public double parkedAltitude;
 
+        /// <summary>
+        /// A flag to indicate whether or not the vessel is on rails.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public bool isOnRails;
+        #endregion
 
+        #region Housekeeping
         protected Vector3 zeroVector = Vector3.zero;
         protected Quaternion parkedRotation;
         protected Vector3 parkedPosition = Vector3.zero;
         float mainThrottle;
         public bool physicsLoaded = false;
+        #endregion
 
+        #region API
+        /// <summary>
+        /// This event tells the controller to set the vessel state as landed. It's not perfect, and you have to F5/F9 for it to take effect, but it basically works.
+        /// </summary>
         [KSPEvent(guiActive = true, guiName = "Set Landed")]
         public void SetLanded()
         {
@@ -65,6 +116,9 @@ namespace KerbalActuators
             physicsLoaded = true;
         }
 
+        /// <summary>
+        /// This event tells the controller to set the vessel state as flying.
+        /// </summary>
         [KSPEvent(guiActive = true, guiName = "Set Flying")]
         public void SetFlying()
         {
@@ -73,26 +127,9 @@ namespace KerbalActuators
             physicsLoaded = false;
         }
 
-        /*
-        public void SetRails()
-        {
-            if (isOnRails)
-            {
-                Events["ToggleRails"].guiName = "Go Off Rails";
-                this.part.vessel.situation = Vessel.Situations.LANDED;
-                this.part.vessel.Landed = true;
-                this.part.vessel.GoOnRails();
-            }
-            else
-            {
-                Events["ToggleRails"].guiName = "Go On Rails";
-                this.part.vessel.GoOffRails();
-                this.part.vessel.situation = Vessel.Situations.FLYING;
-                this.part.vessel.Landed = false;
-            }
-        }
-         */
-
+        /// <summary>
+        /// This event toggles the vessel flying/landed state.
+        /// </summary>
         [KSPEvent(guiActive = true, guiName = "Park Vessel")]
         public void TogglePark()
         {
@@ -107,11 +144,39 @@ namespace KerbalActuators
             SetParking(isParked);
         }
 
+        /// <summary>
+        /// This action sets the parking state on/off.
+        /// </summary>
+        /// <param name="param">A KSPActionParam containing state information for the action.</param>
         [KSPAction]
         public void ToggleParkAction(KSPActionParam param)
         {
             TogglePark();
         }
+
+        /// <summary>
+        /// Attemps to kill the vessel velocity. Best used when under 100m/sec.
+        /// </summary>
+        public void KillVelocity()
+        {
+            this.part.vessel.IgnoreGForces(kGForceFrameIgnore);
+            this.part.vessel.SetWorldVelocity(zeroVector);
+            this.part.vessel.acceleration = zeroVector;
+            this.part.vessel.angularVelocity = zeroVector;
+            this.part.vessel.geeForce = 0.0;
+            this.part.vessel.orbitDriver.pos = parkedPosition;
+            if (physicsLoaded)
+            {
+
+                this.part.vessel.situation = Vessel.Situations.LANDED;
+                this.part.vessel.Landed = true;
+                this.part.vessel.Splashed = false;
+            }
+
+            //Maintain altitude...
+            this.part.vessel.altitude = parkedAltitude;
+        }
+        #endregion
 
         #region IAirParkController
         public string GetSituation()
@@ -164,6 +229,21 @@ namespace KerbalActuators
         }
         #endregion
 
+        #region Overrides
+        public void FixedUpdate()
+        {
+            if (HighLogic.LoadedSceneIsFlight == false)
+                return;
+            currentSituation = this.part.vessel.situation.ToString();
+            if (!isParked)
+                return;
+            if (this.part.vessel.situation == Vessel.Situations.DOCKED)
+                return;
+
+            //Make sure to remove all torque and forces.
+            KillVelocity();
+        }
+
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
@@ -189,12 +269,6 @@ namespace KerbalActuators
             //Game events
             GameEvents.onPhysicsEaseStop.Add(onPhysicsEaseStop);
             GameEvents.onPartUndock.Add(onPartUndock);
-//            GameEvents.onVesselLoaded.Add(onVesselLoaded);
-//            GameEvents.onFlightReady.Add(onFlightReady);
-//            GameEvents.onLevelWasLoadedGUIReady.Add(onLevelWasLoadedGUIReady);
-
-            //Make sure to remove all torque and forces.
-//            KillVelocity();
 
             //When the vessel is loaded, switch to the flying state
             //to avoid potentially crashing into the water.
@@ -207,7 +281,9 @@ namespace KerbalActuators
             this.part.vessel.Splashed = false;
             parkedPosition = getVesselPosition();
         }
+        #endregion
 
+        #region Game Events
         public void onPartUndock(Part undockedPart)
         {
             if (undockedPart != this.part)
@@ -229,84 +305,6 @@ namespace KerbalActuators
             else
                 this.part.vessel.Landed = false;
         }
-
-        /*
-        public void onFlightReady()
-        {
-            if (FlightGlobals.ActiveVessel == this.part.vessel && isParked)
-            {
-                Debug.Log("FRED physics loaded");
-                ScreenMessages.PostScreenMessage("onFlightReady", 10.0f);
-                //Kill current velocity
-                KillVelocity();
-
-                updateLandedState = true;
-                this.part.vessel.situation = Vessel.Situations.LANDED;
-                this.part.vessel.Landed = true;
-
-                //Get volitile parked vessel params
-                parkedPosition = getVesselPosition();
-                parkedRotation = this.part.vessel.transform.rotation;
-                mainThrottle = FlightInputHandler.state.mainThrottle;
-                if (isOnRails)
-                    this.part.vessel.GoOnRails();
-                GameEvents.onPhysicsEaseStop.Remove(onPhysicsEaseStop);
-                physicsLoaded = true;
-            }
-        }
-        */
-        /*
-        public void onVesselLoaded(Vessel ves)
-        {
-            //Once we know that physics is fully loaded,
-            //we can set the landed state if we're parked.
-            if (ves == this.part.vessel && isParked)
-            {
-                ScreenMessages.PostScreenMessage("onVesselLoaded", 10.0f);
-                //Kill current velocity
-                KillVelocity();
-
-                updateLandedState = true;
-                this.part.vessel.situation = Vessel.Situations.LANDED;
-                this.part.vessel.Landed = true;
-
-                //Get volitile parked vessel params
-                parkedPosition = getVesselPosition();
-                parkedRotation = this.part.vessel.transform.rotation;
-                mainThrottle = FlightInputHandler.state.mainThrottle;
-                if (isOnRails)
-                    this.part.vessel.GoOnRails();
-                GameEvents.onPhysicsEaseStop.Remove(onPhysicsEaseStop);
-                physicsLoaded = true;
-            }
-        }
-        /*
-        public void onLevelWasLoadedGUIReady(GameScenes scene)
-        {
-            if (scene != GameScenes.FLIGHT)
-                return;
-            if (FlightGlobals.ActiveVessel == this.part.vessel && isParked)
-            {
-                Debug.Log("FRED physics loaded");
-                ScreenMessages.PostScreenMessage("onLevelWasLoadedGUIReady", 10.0f);
-                //Kill current velocity
-                KillVelocity();
-
-                updateLandedState = true;
-                this.part.vessel.situation = Vessel.Situations.LANDED;
-                this.part.vessel.Landed = true;
-
-                //Get volitile parked vessel params
-                parkedPosition = getVesselPosition();
-                parkedRotation = this.part.vessel.transform.rotation;
-                mainThrottle = FlightInputHandler.state.mainThrottle;
-                if (isOnRails)
-                    this.part.vessel.GoOnRails();
-                GameEvents.onPhysicsEaseStop.Remove(onPhysicsEaseStop);
-                physicsLoaded = true;
-            }
-        }
-         */
 
         public void onPhysicsEaseStop(Vessel ves)
         {
@@ -332,46 +330,12 @@ namespace KerbalActuators
                 GameEvents.onPhysicsEaseStop.Remove(onPhysicsEaseStop);
             }
         }
+        #endregion
 
+        #region Helpers
         public void Destroy()
         {
             GameEvents.onPartUndock.Remove(onPartUndock);
-        }
-
-        public void FixedUpdate()
-        {
-            if (HighLogic.LoadedSceneIsFlight == false)
-                return;
-            currentSituation = this.part.vessel.situation.ToString();
-            if (!isParked)
-                return;
-            if (this.part.vessel.situation == Vessel.Situations.DOCKED)
-                return;
-
-            //Make sure to remove all torque and forces.
-            KillVelocity();
-        }
-
-        public void KillVelocity()
-        {
-            this.part.vessel.IgnoreGForces(kGForceFrameIgnore);
-            this.part.vessel.SetWorldVelocity(zeroVector);
-            this.part.vessel.acceleration = zeroVector;
-            this.part.vessel.angularVelocity = zeroVector;
-            this.part.vessel.geeForce = 0.0;
-            this.part.vessel.orbitDriver.pos = parkedPosition;
-            if (physicsLoaded)
-            {
-
-                //            this.part.vessel.SetPosition(parkedPosition);
-                //            this.part.vessel.transform.rotation = parkedRotation;
-
-                this.part.vessel.situation = Vessel.Situations.LANDED;
-                this.part.vessel.Landed = true;
-                this.part.vessel.Splashed = false;
-            }
-            //Maintain altitude...
-            this.part.vessel.altitude = parkedAltitude;
         }
 
         protected Vector3 getVesselPosition()
@@ -381,5 +345,6 @@ namespace KerbalActuators
             alt = Math.Max(alt, 0); // Underwater!
             return this.part.vessel.mainBody.GetRelSurfacePosition(this.part.vessel.latitude, this.part.vessel.longitude, alt);
         }
+        #endregion
     }
 }

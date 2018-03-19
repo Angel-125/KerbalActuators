@@ -19,103 +19,179 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace KerbalActuators
 {
+    #region IPropSpinner
+    /// <summary>
+    /// This interface is used to toggle the thrust transform of a prop spinner.
+    /// </summary>
     public interface IPropSpinner
     {
+        /// <summary>
+        /// Toggles the thrust from forward to reverse and back again.
+        /// </summary>
         void ToggleThrust();
+
+        /// <summary>
+        /// Sets the reverse thrust.
+        /// </summary>
+        /// <param name="isReverseThrust">True if reverse thrust, false if forward thrust.</param>
         void SetReverseThrust(bool isReverseThrust);
     }
+    #endregion
 
+    /// <summary>
+    /// This class is designed to spin propeller meshes for propeller-driven engines. It supports both propeller blades and blurred propeller meshes.
+    /// </summary>
     public class WBIPropSpinner : PartModule, IPropSpinner
     {
-        // Localized name of forward thrust action
+        #region Fields
+        /// <summary>
+        /// Localized name of forward thrust action
+        /// </summary>
         [KSPField]
         public string forwardThrustActionName = "Set Forward Thrust";
 
-        // Localized name of reverse thrust action
+        /// <summary>
+        /// Localized name of reverse thrust action
+        /// </summary>
         [KSPField]
         public string reverseThrustActionName = "Set Reverse Thrust";
 
+        /// <summary>
+        /// Flag to indicate if the controller is operating in reverse-thrust mode.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public bool reverseThrust;
 
+        /// <summary>
+        /// Name of the thrust transform for forward thrust.
+        /// </summary>
         [KSPField]
         public string thrustTransform = "thrustTransform";
 
+        /// <summary>
+        /// Name of the thrust transform for reverse-thrust.
+        /// </summary>
         [KSPField]
         public string reverseThrustTransform = "reverseThrustTransform";
 
+        /// <summary>
+        /// Flag to indicate whether or not the controller can reverse thrust.
+        /// </summary>
         [KSPField]
         public bool canReverseThrust = true;
 
-        // Name of part animation for reversed thrust
+        /// <summary>
+        /// Name of animation for reversed thrust
+        /// </summary>
         [KSPField]
         public string reverseThrustAnimation = string.Empty;
 
-        // Layer of the animation
+        /// <summary>
+        /// Layer of the animation
+        /// </summary>
         [KSPField]
         public int animationLayer = 1;
 
-        //Name of the non-blurred rotor
-        //The whole thing spins
+        /// <summary>
+        /// Name of the non-blurred rotor. The whole thing spins including any child meshes.
+        /// </summary>
         [KSPField]
         public string rotorTransformName = string.Empty;
 
-        //(Optional) To properly mirror the engine, these parameters specify
-        //the standard and mirrored (symmetrical) rotor blade transforms.
-        //If included, they MUST be child meshes of the mesh specified by rotorTransformName.
+        /// <summary>
+        /// (Optional) To properly mirror the engine, these parameters specify
+        /// the standard and mirrored (symmetrical) rotor blade transforms.
+        /// If included, they MUST be child meshes of the mesh specified by rotorTransformName.
+        /// </summary>
         [KSPField]
         public string standardBladesName = string.Empty;
 
+        /// <summary>
+        /// Name of the mirrored rotor blades
+        /// </summary>
         [KSPField]
         public string mirrorBladesName = string.Empty;
 
-        //Rotor axis of rotation
+        /// <summary>
+        /// Rotor axis of rotation
+        /// </summary>
         [KSPField()]
         public string rotorRotationAxis = "0,0,1";
 
-        //How fast to spin the rotor
+        /// <summary>
+        /// How fast to spin the rotor
+        /// </summary>
         [KSPField]
         public float rotorRPM = 30.0f;
 
-        //How fast to spin up or slow down the rotors until they reach rotorRPM
+        /// <summary>
+        /// How fast to spin up or slow down the rotors until they reach rotorRPM
+        /// </summary>
         [KSPField]
         public float rotorSpoolTime = 3.0f;
 
-        //How fast to spin the rotor when blurred; multiply rotorRPM by blurredRotorFactor
+        /// <summary>
+        /// How fast to spin the rotor when blurred; multiply rotorRPM by blurredRotorFactor
+        /// </summary>
         [KSPField]
         public float blurredRotorFactor = 4.0f;
 
-        //At what percentage of thrust to switch to the blurred rotor/mesh rotor.
+        /// <summary>
+        /// At what percentage of thrust to switch to the blurred rotor/mesh rotor.
+        /// </summary>
         [KSPField]
         public float minThrustRotorBlur = 0.25f;
 
-        //Name of the blurred rotor
+        /// <summary>
+        /// Name of the blurred rotor
+        /// </summary>
         [KSPField]
         public string blurredRotorName = string.Empty;
 
-        //How fast to spin the blurred rotor
+        /// <summary>
+        /// How fast to spin the blurred rotor
+        /// </summary>
         [KSPField]
         public float blurredRotorRPM;
 
+        /// <summary>
+        /// Is the rotor system currently blurred.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public bool isBlurred;
 
+        /// <summary>
+        /// Flag to indicate that the rotors are mirrored.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public bool mirrorRotation;
 
+        /// <summary>
+        /// Flag to indicate that the controller should be in hover mode.
+        /// </summary>
         [KSPField(isPersistant = true)]
         public bool isHovering;
 
+        /// <summary>
+        /// Flag to indicate whether or not the Part Action Window gui controls are visible.
+        /// </summary>
         [KSPField]
         public bool guiVisible = true;
 
+        /// <summary>
+        /// Flag to indicate whether or not part module actions are visible.
+        /// </summary>
         [KSPField]
         public bool actionsVisible = true;
 
-        //During the shutdown process, how fast, in degrees/sec, do the rotors rotate to neutral?
+        /// <summary>
+        /// During the shutdown process, how fast, in degrees/sec, do the rotors rotate to neutral?
+        /// </summary>
         [KSPField]
         public float neutralSpinRate = 10.0f;
+        #endregion
 
+        #region Housekeeping
         protected float currentRotationAngle;
         protected ERotationStates rotationState = ERotationStates.Locked;
         protected float degPerUpdate;
@@ -133,60 +209,23 @@ namespace KerbalActuators
         Transform[] standardBlades = null;
         Transform[] mirroredBlades = null;
         AnimationState reverseThrustAnimationState;
+        #endregion
 
-        public void MirrorRotation(bool isMirrored)
+        #region Overrides
+        public void FixedUpdate()
         {
-            mirrorRotation = isMirrored;
-            setupRotorTransforms();
-        }
+            if (engine == null || rotorTransform == null)
+                return;
+            if (HighLogic.LoadedSceneIsFlight == false)
+                return;
 
-        [KSPAction("Toggle Fwd/Rev Thrust")]
-        public virtual void ToggleThrustTransformAction(KSPActionParam param)
-        {
-            ToggleThrustTransform();
-        }
+            //If the engine isn't running, then slow and stop the rotors.
+            if (!engineIsRunning())
+                rotatePropellersShutdown();
 
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Thrust: Forward")]
-        public void ToggleThrustTransform()
-        {
-            reverseThrust = !reverseThrust;
-            SetupThrustTransform();
-            HandleReverseThrustAnimation();
-
-            //Don't forget the symmetrical parts...
-            if (this.part.symmetryCounterparts.Count > 0)
-            {
-                foreach (Part symmetryPart in this.part.symmetryCounterparts)
-                {
-                    WBIPropSpinner propController = symmetryPart.GetComponent<WBIPropSpinner>();
-                    if (propController != null)
-                    {
-                        propController.reverseThrust = this.reverseThrust;
-                        propController.SetupThrustTransform();
-                        propController.HandleReverseThrustAnimation();
-                    }
-                }
-            }
-
-        }
-
-        public virtual void SetReverseThrust(bool isReverseThrust)
-        {
-            reverseThrust = isReverseThrust;
-            SetupThrustTransform();
-            HandleReverseThrustAnimation();
-        }
-
-        public virtual void ToggleThrust()
-        {
-            reverseThrust = !reverseThrust;
-            SetupThrustTransform();
-            HandleReverseThrustAnimation();
-        }
-
-        public virtual void SetGUIVisible(bool isVisible)
-        {
-            Events["ToggleThrustTransform"].active = isVisible;
+            //If the rotor is deployed, and the engine is running, then rotate the rotors.
+            else
+                rotatePropellersRunning();
         }
 
         public override void OnLoad(ConfigNode node)
@@ -268,24 +307,90 @@ namespace KerbalActuators
 
             //Rotor transforms
             setupRotorTransforms();
-        }
+        }        
+        #endregion
 
-        public void FixedUpdate()
+        #region API
+        /// <summary>
+        /// Sets mirrored rotation.
+        /// </summary>
+        /// <param name="isMirrored">True if rotation is mirrored, false if not.</param>
+        public void MirrorRotation(bool isMirrored)
         {
-            if (engine == null || rotorTransform == null)
-                return;
-            if (HighLogic.LoadedSceneIsFlight == false)
-                return;
-
-            //If the engine isn't running, then slow and stop the rotors.
-            if (!engineIsRunning())
-                rotatePropellersShutdown();
-
-            //If the rotor is deployed, and the engine is running, then rotate the rotors.
-            else
-                rotatePropellersRunning();
+            mirrorRotation = isMirrored;
+            setupRotorTransforms();
         }
 
+        /// <summary>
+        /// This action toggles the thrust transforms from forward to reverse and back.
+        /// </summary>
+        /// <param name="param">A KSPActionParam with action state information.</param>
+        [KSPAction("Toggle Fwd/Rev Thrust")]
+        public virtual void ToggleThrustTransformAction(KSPActionParam param)
+        {
+            ToggleThrustTransform();
+        }
+
+        /// <summary>
+        /// This event toggles the thrust transforms from forward to reverse and back. It also plays the thrust reverse animation, if any.
+        /// </summary>
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Thrust: Forward")]
+        public void ToggleThrustTransform()
+        {
+            reverseThrust = !reverseThrust;
+            SetupThrustTransform();
+            HandleReverseThrustAnimation();
+
+            //Don't forget the symmetrical parts...
+            if (this.part.symmetryCounterparts.Count > 0)
+            {
+                foreach (Part symmetryPart in this.part.symmetryCounterparts)
+                {
+                    WBIPropSpinner propController = symmetryPart.GetComponent<WBIPropSpinner>();
+                    if (propController != null)
+                    {
+                        propController.reverseThrust = this.reverseThrust;
+                        propController.SetupThrustTransform();
+                        propController.HandleReverseThrustAnimation();
+                    }
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Sets the thrust mode and plays the associated reverse-thrust andimation if any.
+        /// </summary>
+        /// <param name="isReverseThrust">True if the thrust is reversed, false if not.</param>
+        public virtual void SetReverseThrust(bool isReverseThrust)
+        {
+            reverseThrust = isReverseThrust;
+            SetupThrustTransform();
+            HandleReverseThrustAnimation();
+        }
+
+        /// <summary>
+        /// Toggles the thrust from forward to back or back to forward and plays the animation, if any.
+        /// </summary>
+        public virtual void ToggleThrust()
+        {
+            reverseThrust = !reverseThrust;
+            SetupThrustTransform();
+            HandleReverseThrustAnimation();
+        }
+
+        /// <summary>
+        /// Shows or Hides the Part Action Window GUI controls associated with the controller.
+        /// </summary>
+        /// <param name="isVisible">True if the controls should be shown, false if not.</param>
+        public virtual void SetGUIVisible(bool isVisible)
+        {
+            Events["ToggleThrustTransform"].active = isVisible;
+        }
+
+        /// <summary>
+        /// Sets up the thrust transforms.
+        /// </summary>
         public void SetupThrustTransform()
         {
             //We have separate forward and reverse thrust transforms. Switch them out.
@@ -303,6 +408,9 @@ namespace KerbalActuators
             }
         }
 
+        /// <summary>
+        /// Sets up the thrust animation.
+        /// </summary>
         protected void SetupAnimation()
         {
             // Set up animation if needed
@@ -320,6 +428,9 @@ namespace KerbalActuators
             }
         }
 
+        /// <summary>
+        /// Plays the reverse thrust animation, if any.
+        /// </summary>
         public void HandleReverseThrustAnimation()
         {
             if (reverseThrustAnimationState != null)
@@ -338,6 +449,9 @@ namespace KerbalActuators
             }
         }
 
+        #endregion
+
+        #region Helpers
         protected void setupEngines()
         {
             //See if we have multiple engines that we need to support
@@ -349,14 +463,14 @@ namespace KerbalActuators
                 foreach (ModuleEnginesFX multiEngine in engines)
                 {
                     multiModeEngines.Add(multiEngine.engineID, multiEngine);
-                    
+
                 }
-                
+
                 if (engineSwitcher.runningPrimary)
                     engine = multiModeEngines[engineSwitcher.primaryEngineID];
                 else
                     engine = multiModeEngines[engineSwitcher.secondaryEngineID];
-                
+
                 return;
             }
 
@@ -384,9 +498,7 @@ namespace KerbalActuators
                 return false;
             else
                 return true;
-        }
-
-      
+        }     
 
         protected void rotatePropellersShutdown()
         {
@@ -618,5 +730,6 @@ namespace KerbalActuators
         {
             isHovering = hoverActive;
         }
+        #endregion
     }
 }
