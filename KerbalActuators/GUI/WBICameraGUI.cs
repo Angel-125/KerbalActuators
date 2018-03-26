@@ -42,8 +42,15 @@ namespace KerbalActuators
         {
             GUILayout.BeginVertical();
 
-            //GUI.DrawTexture(new Rect(0, 0, 300, 300), renderTexture);
-            GUILayout.Label("camera");
+            if (camera != null)
+            {
+                camera.Render();
+                GUI.DrawTexture(new Rect(0, 0, 300, 300), renderTexture);
+            }
+            else
+            {
+                GUILayout.Label("camera not found");
+            }
 
             GUILayout.EndVertical();
         }

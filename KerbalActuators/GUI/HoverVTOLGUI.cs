@@ -49,8 +49,7 @@ namespace KerbalActuators
         {
             string baseIconURL = "WildBlueIndustries/001KerbalActuators/Icons/";
 
-            string settingsPath = AssemblyLoader.loadedAssemblies.GetPathByType(typeof(WBIVTOLAppButton)) + "/KerbalActuatorsSettings.cfg";
-            ConfigNode settingsNode = ConfigNode.Load(settingsPath);
+            ConfigNode settingsNode = GameDatabase.Instance.GetConfigNode("KerbalActuators");
             if (settingsNode != null)
                 baseIconURL = settingsNode.GetValue("iconsFolder");
 

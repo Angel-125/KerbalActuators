@@ -57,6 +57,7 @@ namespace KerbalActuators
         public static Texture loadIcon = null;
         public static Texture saveIcon = null;
         public static Texture newHomeIcon = null;
+        public static Texture stopIcon = null;
 
         public IServoController[] servoControllers;
         public int maxWindowHeight = 600;
@@ -70,6 +71,7 @@ namespace KerbalActuators
         GUILayoutOption[] sequencePanelOptions = new GUILayoutOption[] { GUILayout.Width(150) };
         GUILayoutOption[] servoPanelOptions = new GUILayoutOption[] { GUILayout.Width(275) };
         GUILayoutOption[] buttonOptions = new GUILayoutOption[] { GUILayout.Width(24), GUILayout.Height(24) };
+        GUILayoutOption[] stopButtonOptions = new GUILayoutOption[] { GUILayout.Width(60), GUILayout.Height(60) };
         GUILayoutOption[] okCancelOptions = new GUILayoutOption[] { GUILayout.Width(32), GUILayout.Height(32) };
         string sequenceName = "Sequence";
         string positionName = "Position";
@@ -123,6 +125,7 @@ namespace KerbalActuators
                 loadIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Load", false);
                 saveIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Save", false);
                 newHomeIcon = GameDatabase.Instance.GetTexture(baseIconURL + "NewHome", false);
+                stopIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Stop", false);
             }
 
             //Determine the save folder & sequence files
@@ -463,6 +466,13 @@ namespace KerbalActuators
                 if (sequences.Count >= 1)
                     servoManager.PlayHomeSequence();
             }
+
+            //Stop all servo movement
+            if (GUILayout.Button(stopIcon, stopButtonOptions))
+            {
+                servoManager.StopAllServos();
+            }
+
             GUILayout.EndHorizontal();
 
             //Snapshots list
@@ -593,6 +603,12 @@ namespace KerbalActuators
 
                 //Set the new home sequence
                 servoManager.CreateHomeSequence(homeSequence);
+            }
+
+            //Stop all servo movement
+            if (GUILayout.Button(stopIcon, stopButtonOptions))
+            {
+                servoManager.StopAllServos();
             }
 
             GUILayout.EndHorizontal();

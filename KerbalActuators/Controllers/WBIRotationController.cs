@@ -772,6 +772,19 @@ namespace KerbalActuators
         }
 
         /// <summary>
+        /// Tells the servo to stop moving.
+        /// </summary>
+        public void StopMoving()
+        {
+            rotationState = ERotationStates.Locked;
+            rotationStateInt = (int)rotationState;
+            state = kLocked;
+
+            //Update display
+            currentAngleDisplay = currentRotationAngle;
+        }
+
+        /// <summary>
         /// Tells the servo to draw its GUI controls. It's used by the servo manager.
         /// </summary>
         public void DrawControls()

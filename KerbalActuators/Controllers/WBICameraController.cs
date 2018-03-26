@@ -26,7 +26,12 @@ namespace KerbalActuators
         const float kFovMax = 90.0f;
 
         /// <summary>
-        /// Name of the camera transform.
+        /// Sets the visibility state of the Part Action Window controls.
+        /// </summary>
+        public bool guiVisible = true;
+
+        /// <summary>
+        /// Name of the camera.
         /// </summary>
         [KSPField]
         public string cameraTransformName = string.Empty;
@@ -61,63 +66,37 @@ namespace KerbalActuators
             else
             {
                 cameraWindow.SetVisible(false);
-                DestroyCamera();
+                //DestroyCamera();
             }
         }
 
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
-            cameraTransform = this.part.FindModelTransform(cameraTransformName);
             cameraWindow = new WBICameraGUI();
         }
 
         public virtual void SetupCamera()
         {
-            if (cameraTransform == null)
+            if (renderTexture == null)
             {
-                Debug.Log("No cameraTransform!!!");
-                return;
+                renderTexture = new RenderTexture(WBICameraGUI.kStartingWidth, WBICameraGUI.kStartingHeight, 24);
+                renderTexture.isPowerOfTwo = true;
+                renderTexture.antiAliasing = 4;
+                renderTexture.filterMode = FilterMode.Trilinear;
+                renderTexture.Create();
+                while (!renderTexture.IsCreated()) { }
             }
-            renderTexture = new RenderTexture(WBICameraGUI.kStartingWidth, WBICameraGUI.kStartingHeight, 24);
-            renderTexture.isPowerOfTwo = true;
-            renderTexture.antiAliasing = 4;
-            renderTexture.filterMode = FilterMode.Trilinear;
-            renderTexture.Create();
-            while (!renderTexture.IsCreated()) { }
 
-            /*
-            camera = this.part.gameObject.AddComponent<UnityEngine.Camera>();
-            camera.transform.position = cameraTransform.position;
-            camera.transform.rotation = cameraTransform.rotation;
-
-            camera.nearClipPlane = 0.001f;
-            camera.farClipPlane = 1000000000f;
-            camera.fieldOfView = camFoV;
-            camera.cullingMask = (1 << 0) | (1 << 1) | (1 << 4) | (1 << 9) | (1 << 10) | (1 << 15) | (1 << 18) | (1 << 20) | (1 << 23);
-//            camera.targetTexture = renderTexture;
-            */
-
-            camera = this.part.gameObject.AddComponent<UnityEngine.Camera>();
-            Camera[] cameras = UnityEngine.Camera.allCameras;
+            Camera[] cameras = this.part.gameObject.GetComponentsInChildren<Camera>();
             for (int index = 0; index < cameras.Length; index++)
             {
-                if (cameras[index].name == "Camera 01")//"Camera 00"
-                {
-                    camera.CopyFrom(cameras[index]);
-                    camera.name = cameraName;
-                    camera.targetTexture = renderTexture;
-                    camera.Render();
-                    break;
-                }
+                Debug.Log("Camera " + index + " name: " + cameras[index].name);
             }
-        }
-
-        public virtual void DestroyCamera()
-        {
+            camera = this.part.gameObject.GetComponentInChildren<Camera>();
             if (camera != null)
             {
-                DestroyImmediate(camera);
+                camera.targetTexture = renderTexture;
             }
         }
     }

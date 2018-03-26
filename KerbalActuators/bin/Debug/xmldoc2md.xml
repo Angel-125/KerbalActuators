@@ -55,6 +55,16 @@
             </summary>
             <returns>True if moving, false if not.</returns>
         </member>
+        <member name="M:KerbalActuators.IServoController.StopMoving">
+            <summary>
+            Tells the servo to stop moving.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBILightController.guiVisible">
+            <summary>
+            Sets the visibility state of the Part Action Window controls.
+            </summary>
+        </member>
         <member name="F:KerbalActuators.WBILightController.groupID">
             <summary>
             Servo group ID. Default is "Light"
@@ -64,6 +74,27 @@
             <summary>
             Name of the servo. Used to identify it in the servo manager and the sequence file.
             </summary>
+        </member>
+        <member name="M:KerbalActuators.WBILightController.ToggleLights">
+            <summary>
+            KSP event to toggle the lights on and off
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.WBILightController.TurnOnLights">
+            <summary>
+            Turns on the lights
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.WBILightController.TurnOffLights">
+            <summary>
+            Turns off the lights
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.WBILightController.ToggleLights(System.Boolean)">
+            <summary>
+            Toggles the light animation On/Off
+            </summary>
+            <param name="deployed">Set to true to turn on lights of false to turn them off</param>
         </member>
         <member name="M:KerbalActuators.WBILightController.GetGroupID">
             <summary>
@@ -86,6 +117,17 @@
             Returns the panel height for the servo manager's GUI.
             </summary>
             <returns>An Int containing the height of the panel.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBILightController.IsMoving">
+            <summary>
+            Returns whether or not the animation is moving
+            </summary>
+            <returns>True if moving, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBILightController.StopMoving">
+            <summary>
+            Tells the servo to stop moving.
+            </summary>
         </member>
         <member name="M:KerbalActuators.WBILightController.TakeSnapshot">
             <summary>
@@ -362,9 +404,14 @@
             Attemps to kill the vessel velocity. Best used when under 100m/sec.
             </summary>
         </member>
+        <member name="F:KerbalActuators.WBICameraController.guiVisible">
+            <summary>
+            Sets the visibility state of the Part Action Window controls.
+            </summary>
+        </member>
         <member name="F:KerbalActuators.WBICameraController.cameraTransformName">
             <summary>
-            Name of the camera transform.
+            Name of the camera.
             </summary>
         </member>
         <member name="F:KerbalActuators.WBICameraController.cameraName">
@@ -380,6 +427,11 @@
             Special thanks to Sirkut for show how this is done!
             NOTE: The part must have a trigger collider to detect when the magnet
             touches a target part.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBIMagnetController.guiVisible">
+            <summary>
+            Sets the visibility state of the Part Action Window controls.
             </summary>
         </member>
         <member name="F:KerbalActuators.WBIMagnetController.debugMode">
@@ -485,6 +537,11 @@
             Determines whether or not the servo is moving
             </summary>
             <returns>True if the servo is moving, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIMagnetController.StopMoving">
+            <summary>
+            Tells the servo to stop moving.
+            </summary>
         </member>
         <member name="M:KerbalActuators.WBIMagnetController.GetGroupID">
             <summary>
@@ -772,6 +829,11 @@
             Creates a home sequence from the supplied config node.
             </summary>
             <param name="node">A SEQUENCE_NOD ConfigNode containing the new home sequence</param>
+        </member>
+        <member name="M:KerbalActuators.WBIServoManager.StopAllServos">
+            <summary>
+            Immediately stops all servos from moving.
+            </summary>
         </member>
         <member name="T:KerbalActuators.ERotationStates">
             <summary>
@@ -1120,6 +1182,11 @@
             Determines whether or not the servo is moving
             </summary>
             <returns>True if the servo is moving, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIRotationController.StopMoving">
+            <summary>
+            Tells the servo to stop moving.
+            </summary>
         </member>
         <member name="M:KerbalActuators.WBIRotationController.DrawControls">
             <summary>

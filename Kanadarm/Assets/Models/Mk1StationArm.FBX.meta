@@ -1,0 +1,206 @@
+fileFormatVersion: 2
+guid: e48b64dbfa132fd4ca44944e4c53b629
+timeCreated: 1521863532
+licenseType: Free
+ModelImporter:
+  serializedVersion: 18
+  fileIDToRecycleName:
+    100000: BlueArm
+    100002: BlueWristPitch
+    100004: BlueWristRoll
+    100006: BlueWristYaw
+    100008: //RootNode
+    100010: RedArm
+    100012: RedWristPitch
+    100014: RedWristRoll
+    100016: RedWristYaw
+    100018: FixedBase
+    100020: ShoulderPitch
+    100022: ShoulderSwivel
+    100024: ShoulderYaw
+    100026: Elbow
+    100028: WristPitch
+    100030: WristRoll
+    100032: WristYaw
+    100034: Elbow 1
+    100036: Hand
+    100038: Kanadarm
+    100040: Mk1StationArm
+    100042: ShoulderLtRt
+    100044: ShoulderUpDn
+    100046: Sky001
+    100048: WristLtRt
+    100050: WristUpDn
+    100052: DockingPort
+    100054: WristCamBody
+    100056: WristCamPitch
+    400000: BlueArm
+    400002: BlueWristPitch
+    400004: BlueWristRoll
+    400006: BlueWristYaw
+    400008: //RootNode
+    400010: RedArm
+    400012: RedWristPitch
+    400014: RedWristRoll
+    400016: RedWristYaw
+    400018: FixedBase
+    400020: ShoulderPitch
+    400022: ShoulderSwivel
+    400024: ShoulderYaw
+    400026: Elbow
+    400028: WristPitch
+    400030: WristRoll
+    400032: WristYaw
+    400034: Elbow 1
+    400036: Hand
+    400038: Kanadarm
+    400040: Mk1StationArm
+    400042: ShoulderLtRt
+    400044: ShoulderUpDn
+    400046: Sky001
+    400048: WristLtRt
+    400050: WristUpDn
+    400052: DockingPort
+    400054: WristCamBody
+    400056: WristCamPitch
+    2300000: BlueArm
+    2300002: BlueWristPitch
+    2300004: BlueWristRoll
+    2300006: BlueWristYaw
+    2300008: RedArm
+    2300010: RedWristPitch
+    2300012: RedWristRoll
+    2300014: RedWristYaw
+    2300016: FixedBase
+    2300018: ShoulderPitch
+    2300020: ShoulderSwivel
+    2300022: ShoulderYaw
+    2300024: Elbow
+    2300026: WristPitch
+    2300028: WristRoll
+    2300030: WristYaw
+    2300032: Elbow 1
+    2300034: Hand
+    2300036: ShoulderLtRt
+    2300038: ShoulderUpDn
+    2300040: WristLtRt
+    2300042: WristUpDn
+    2300044: DockingPort
+    2300046: WristCamBody
+    2300048: WristCamPitch
+    3300000: BlueArm
+    3300002: BlueWristPitch
+    3300004: BlueWristRoll
+    3300006: BlueWristYaw
+    3300008: RedArm
+    3300010: RedWristPitch
+    3300012: RedWristRoll
+    3300014: RedWristYaw
+    3300016: FixedBase
+    3300018: ShoulderPitch
+    3300020: ShoulderSwivel
+    3300022: ShoulderYaw
+    3300024: Elbow
+    3300026: WristPitch
+    3300028: WristRoll
+    3300030: WristYaw
+    3300032: Elbow 1
+    3300034: Hand
+    3300036: ShoulderLtRt
+    3300038: ShoulderUpDn
+    3300040: WristLtRt
+    3300042: WristUpDn
+    3300044: DockingPort
+    3300046: WristCamBody
+    3300048: WristCamPitch
+    4300000: RedWristRoll
+    4300002: RedWristYaw
+    4300004: RedWristPitch
+    4300006: RedArm
+    4300008: BlueArm
+    4300010: BlueWristPitch
+    4300012: BlueWristYaw
+    4300014: BlueWristRoll
+    4300016: FixedBase
+    4300018: ShoulderSwivel
+    4300020: ShoulderYaw
+    4300022: ShoulderPitch
+    4300024: WristYaw
+    4300026: Elbow
+    4300028: WristPitch
+    4300030: WristRoll
+    4300032: ShoulderLtRt
+    4300034: ShoulderUpDn
+    4300036: WristUpDn
+    4300038: WristLtRt
+    4300040: Hand
+    4300042: Elbow
+    4300044: DockingPort
+    4300046: WristCamPitch
+    4300048: WristCamBody
+    9500000: //RootNode
+    11100000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    animationCompression: 1
+    animationRotationError: .5
+    animationPositionError: .5
+    animationScaleError: .5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    splitTangentsAcrossUV: 1
+    normalImportMode: 0
+    tangentImportMode: 1
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    human: []
+    skeleton: []
+    armTwist: .5
+    foreArmTwist: .5
+    upperLegTwist: .5
+    legTwist: .5
+    armStretch: .0500000007
+    legStretch: .0500000007
+    feetSpacing: 0
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 1
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

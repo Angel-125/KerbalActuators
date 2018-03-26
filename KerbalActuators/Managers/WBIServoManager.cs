@@ -71,6 +71,11 @@ namespace KerbalActuators
         /// </summary>
         /// <returns>True if moving, false if not.</returns>
         bool IsMoving();
+
+        /// <summary>
+        /// Tells the servo to stop moving.
+        /// </summary>
+        void StopMoving();
     }
     #endregion
 
@@ -220,6 +225,7 @@ namespace KerbalActuators
             //If all servo controllers have completed their movement, then play the next snapshot
             else if (playNextSnapshot)
             {
+                Debug.Log("[WBIServoManager] - Snapshot playback complete.");
                 snapshotID += 1;
 
                 //Stay in bounds...
@@ -233,6 +239,7 @@ namespace KerbalActuators
                 {
                     snapshotID = -1;
                     managerState = EServoManagerStates.Locked;
+                    Debug.Log("[WBIServoManager] - Sequence complete.");
                 }
             }
         }
@@ -279,6 +286,7 @@ namespace KerbalActuators
         {
             if (sequenceIndex < 0 || sequenceIndex > sequences.Count)
                 return;
+            Debug.Log("[WBIServoManager] - Playing sequence: " + sequences[sequenceIndex].GetValue("name") + " (" + sequenceIndex + ")");
 
             //A sequence consists of a series of snapshots.
             //A snapshot is done when all the contollers are locked.
@@ -341,6 +349,7 @@ namespace KerbalActuators
         /// <param name="snapshotIndex">An integer containing the desired snampshot index.</param>
         public void PlaySnapshot(int snapshotIndex)
         {
+            Debug.Log("[WBIServoManager] - Playing snapshot: " + snapshots[snapshotIndex].GetValue("name"));
             snapshotID = snapshotIndex;
 
             currentSnapshot = snapshots[snapshotID];
@@ -399,6 +408,15 @@ namespace KerbalActuators
                 sequences.Add(node);
             else
                 sequences[0] = node;
+        }
+
+        /// <summary>
+        /// Immediately stops all servos from moving.
+        /// </summary>
+        public void StopAllServos()
+        {
+            for (int index = 0; index < servoControllers.Length; index++)
+                servoControllers[index].StopMoving();
         }
         #endregion
     }

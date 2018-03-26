@@ -47,6 +47,11 @@ namespace KerbalActuators
 
         #region Fields
         /// <summary>
+        /// Sets the visibility state of the Part Action Window controls.
+        /// </summary>
+        public bool guiVisible = true;
+
+        /// <summary>
         /// Flag to indicate if we should operate in debug mode
         /// </summary>
         [KSPField]
@@ -138,6 +143,9 @@ namespace KerbalActuators
                 this.part.Effect(runningEffectName, -1.0f);
             if (!string.IsNullOrEmpty(detachEffectName))
                 this.part.Effect(detachEffectName, -1.0f);
+
+            if (!guiVisible)
+                HideGUI();
         }
 
         public void OnCollisionEnter(Collision collision)
@@ -333,6 +341,10 @@ namespace KerbalActuators
             Fields["targetName"].guiActive = false;
             Fields["status"].guiActive = false;
             Fields["magnetActivated"].guiActive = false;
+
+            Fields["targetName"].guiActiveEditor = false;
+            Fields["status"].guiActiveEditor = false;
+            Fields["magnetActivated"].guiActiveEditor = false;
         }
 
         /// <summary>
@@ -376,6 +388,14 @@ namespace KerbalActuators
         {
             //No special sauce here...
             return false;
+        }
+
+        /// <summary>
+        /// Tells the servo to stop moving.
+        /// </summary>
+        public void StopMoving()
+        {
+            //NOP
         }
 
         /// <summary>
