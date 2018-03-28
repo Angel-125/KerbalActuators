@@ -127,7 +127,7 @@ namespace KerbalActuators
         #endregion
 
         #region Housekeeping
-        protected ServoGUI servoGUI = new ServoGUI();
+        protected ServoGUI servoGUI = null;
         protected IServoController[] servoControllers;
         protected List<ConfigNode> sequences = new List<ConfigNode>();
         protected ConfigNode[] snapshots;
@@ -254,6 +254,8 @@ namespace KerbalActuators
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Toggle Servo GUI")]
         public void ToggleGUI()
         {
+            if (servoGUI == null)
+                servoGUI = new ServoGUI();
             servoGUI.servoManager = this;
             servoGUI.sequences = this.sequences;
             servoGUI.maxWindowHeight = this.maxWindowHeight;

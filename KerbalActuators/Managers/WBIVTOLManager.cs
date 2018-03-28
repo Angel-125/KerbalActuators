@@ -68,7 +68,7 @@ namespace KerbalActuators
         private IRotationController[] rotationControllers;
         private IThrustVectorController[] thrustVectorControllers;
         private ICustomController[] customControllers;
-        private HoverVTOLGUI hoverGUI = new HoverVTOLGUI();
+        private HoverVTOLGUI hoverGUI = null;
         private string hoverControlsPath;
 
         #region API
