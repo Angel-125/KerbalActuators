@@ -17,4 +17,4 @@ C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\xml
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\RunMDSeparator.bat
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\RunPowershell.bat
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\xmldoc2md.ps1
-C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\xmldoc2md.xml
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.csprojResolveAssemblyReference.cache

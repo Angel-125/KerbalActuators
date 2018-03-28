@@ -21,6 +21,24 @@ Copy the contents of the mod's GameData directory into your GameData folder.
 
 ---REVISION HISORY---
 
+1.3
+New Actuators
+- WBITranslationController: This part module lets you move mesh transforms around.
+
+New Parts
+- Mk1 Station Arm (Advanced Construction): This arm can be use to maneuver payloads around.
+- Konstruction Krane (Advanced Construction): The ground equivalent to the Mk1 Station Arm, the Konstruction krane is helpful for picking stuff up on the ground and placing them were you want to. You can either use the built-in extension pole to grab things, or use the winch with a magnet if you have KAS installed.
+
+Bug Fixes & Enhancements
+- Added an emergency stop button to halt all servo movement.
+- WBILightController now works properly.
+- You can now specify where to find the icons using a KerbalActuators config node:
+KerbalActuators
+{
+	iconsFolder = WildBlueIndustries/001KerbalActuators/Icons
+	VTOLAppButtonIcon = WildBlueIndustries/001KerbalActuators/Icons/VTOLAppButton
+}
+
 1.2.0
 - Added WBIMagnetController and WBILightController.
 - Added XML document comments to all the modules.

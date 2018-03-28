@@ -212,7 +212,7 @@ namespace KerbalActuators
                     DebugLog("No magnetTransform found");
                 return;
             }
-
+            
             magnetRigidBody = magnetTransform.gameObject.AddComponent<Rigidbody>();
             magnetRigidBody.isKinematic = true;
 

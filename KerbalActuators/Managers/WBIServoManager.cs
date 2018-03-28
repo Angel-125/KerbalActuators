@@ -165,6 +165,8 @@ namespace KerbalActuators
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
+            if (!HighLogic.LoadedSceneIsFlight && !HighLogic.LoadedSceneIsEditor)
+                return;
 
             //Find servo controllers
             List<IServoController> controllers = this.part.FindModulesImplementing<IServoController>();

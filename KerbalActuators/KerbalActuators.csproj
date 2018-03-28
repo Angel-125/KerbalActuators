@@ -78,6 +78,7 @@
     <Compile Include="Controllers\WBICameraController.cs" />
     <Compile Include="GUI\WBICameraGUI.cs" />
     <Compile Include="Controllers\WBILightController.cs" />
+    <Compile Include="WBIMovableJoint.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MarkdownSeparator.exe">
