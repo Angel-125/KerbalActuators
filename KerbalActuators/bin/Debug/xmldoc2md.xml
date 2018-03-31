@@ -549,6 +549,87 @@
             </summary>
             <returns>A string containing the group ID</returns>
         </member>
+        <member name="T:KerbalActuators.WBITranslationController">
+            <summary>
+            Instead of rotating a mesh transform, the WBITranslationContorller can move the mesh around along its X, Y, and Z axis.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.guiVisible">
+            <summary>
+            Is the GUI visible in the Part Action Window (PAW).
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.servoName">
+            <summary>
+            User-friendly name of the servo. Default is "Actuator."
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.groupID">
+            <summary>
+            GroupID is used to separate controllers by group. It enables you to have more than one servo manager on a part, and each servo manager
+            controls a separate group.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.meshTransformName">
+            <summary>
+            Name of the transform to move around.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.movementAxis">
+            <summary>
+            Axis along which to move the mesh.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.hasMinDistance">
+            <summary>
+            Flag to indicate if the mesh can move "left" of its neutral position. "Neutral" is where the mesh is when first loaded into the game before any translation is applied. Default: true.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.minDistance">
+            <summary>
+            Minimum distance in meters that the mesh is allowed to traverse. minDistance-----neutral (0)-----maxDistance.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.hasMaxDistance">
+            <summary>
+            Flag to indicate if the mesh can move "right" of its neutral position. "Neutral" is where the mesh is when first loaded into the game before any translation is applied. Default: true
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.maxDistance">
+            <summary>
+            Maximum distance in meters that the mesh is allowed to traverse. minDistance-----neutral (0)-----maxDistance.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.velocityMetersPerSec">
+            <summary>
+            The rate in meters per second that the mesh may move. Can be overriden by the user.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.currentPosition">
+            <summary>
+            Current relative position of the mesh.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.targetPosition">
+            <summary>
+            Target position of the mesh.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.movementState">
+            <summary>
+            Current movement state.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.runningEffectName">
+            <summary>
+            Name of the effect to play while a servo controller is running. Uses the standard EFFECTS node found in the part config.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITranslationController.status">
+            <summary>
+            User-friendly status display.
+            </summary>
+        </member>
         <member name="T:KerbalActuators.IPropSpinner">
             <summary>
             This interface is used to toggle the thrust transform of a prop spinner.

@@ -292,7 +292,15 @@ namespace KerbalActuators
 
             //If the settings have changed then re-setup the lights.
             if (prevRed != red || prevGreen != green || prevBlue != blue || prevLevel != intensity)
+            {
+                if (lightsOn)
+                {
+                    lightsOn = false;
+                    setupLights();
+                    lightsOn = true;
+                }
                 setupLights();
+            }
         }
 
         protected void setupLights()

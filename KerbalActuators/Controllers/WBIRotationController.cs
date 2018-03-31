@@ -652,24 +652,22 @@ namespace KerbalActuators
 
         public virtual void FixedUpdate()
         {
-            if (rotationState == ERotationStates.Locked)
-            {
-                this.part.Effect("runningServo", -1.0f);
-                return;
-            }
-
             //calculate the new rotation angle
             switch (rotationState)
             {
                 case ERotationStates.RotatingUp:
                     currentRotationAngle += degPerUpdate;
                     currentRotationAngle = currentRotationAngle % 360.0f;
+                    if (!string.IsNullOrEmpty(runningEffectName))
+                        this.part.Effect(runningEffectName, 1.0f);
                     break;
 
                 case ERotationStates.RotatingDown:
                     currentRotationAngle -= degPerUpdate;
                     if (currentRotationAngle < 0f)
                         currentRotationAngle = 360f - currentRotationAngle;
+                    if (!string.IsNullOrEmpty(runningEffectName))
+                        this.part.Effect(runningEffectName, 1.0f);
                     break;
             }
 
