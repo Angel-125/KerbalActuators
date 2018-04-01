@@ -58,6 +58,11 @@ namespace KerbalActuators
         public static Texture saveIcon = null;
         public static Texture newHomeIcon = null;
         public static Texture stopIcon = null;
+        public static Texture minIcon = null;
+        public static Texture maxIcon = null;
+        public static Texture forwardIcon = null;
+        public static Texture backIcon = null;
+        public static GUILayoutOption[] buttonOptions = new GUILayoutOption[] { GUILayout.Width(32), GUILayout.Height(32) };
 
         public IServoController[] servoControllers;
         public int maxWindowHeight = 600;
@@ -70,7 +75,6 @@ namespace KerbalActuators
         int panelHeight;
         GUILayoutOption[] sequencePanelOptions = new GUILayoutOption[] { GUILayout.Width(150) };
         GUILayoutOption[] servoPanelOptions = new GUILayoutOption[] { GUILayout.Width(275) };
-        GUILayoutOption[] buttonOptions = new GUILayoutOption[] { GUILayout.Width(24), GUILayout.Height(24) };
         GUILayoutOption[] stopButtonOptions = new GUILayoutOption[] { GUILayout.Width(60), GUILayout.Height(60) };
         GUILayoutOption[] okCancelOptions = new GUILayoutOption[] { GUILayout.Width(32), GUILayout.Height(32) };
         string sequenceName = "Sequence";
@@ -126,6 +130,10 @@ namespace KerbalActuators
                 saveIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Save", false);
                 newHomeIcon = GameDatabase.Instance.GetTexture(baseIconURL + "NewHome", false);
                 stopIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Stop", false);
+                minIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Min", false);
+                maxIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Max", false);
+                forwardIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Forward", false);
+                backIcon = GameDatabase.Instance.GetTexture(baseIconURL + "Backward", false);
             }
 
             //Determine the save folder & sequence files

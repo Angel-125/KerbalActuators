@@ -1,4 +1,4 @@
-﻿/**
+﻿/*
  * WindowUtils.cs
  * 
  * Thunder Aerospace Corporation's library for the Kerbal Space Program, by Taranis Elsu

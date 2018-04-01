@@ -411,6 +411,13 @@ namespace KerbalActuators
             if (currentRotationAngle == 0f)
                 return;
 
+            //Clear any current rotations
+            if (rotationState != ERotationStates.Locked)
+            {
+                targetAngle = currentRotationAngle;
+                rotationState = ERotationStates.Locked;
+            }
+
             SetRotation(0f);
             if (applyToCounterparts)
                 updateCounterparts();
@@ -482,6 +489,13 @@ namespace KerbalActuators
         /// <param name="rotationDelta">The amount to rotate, in degrees.</param>
         public void RotateUp(float rotationDelta)
         {
+            //Clear any current rotations
+            if (rotationState == ERotationStates.RotatingDown)
+            {
+                targetAngle = currentRotationAngle;
+                rotationState = ERotationStates.Locked;
+            }
+
             targetAngle += rotationDelta;
             targetAngle = targetAngle % 360.0f;
 
@@ -505,6 +519,13 @@ namespace KerbalActuators
         {
             if (targetAngle - rotationDelta < 0f && minRotateAngle == 0f)
                 return;
+
+            //Clear any current rotations
+            if (rotationState == ERotationStates.RotatingUp)
+            {
+                targetAngle = currentRotationAngle;
+                rotationState = ERotationStates.Locked;
+            }
 
             targetAngle -= rotationDelta;
             if (targetAngle < 0f)
@@ -819,21 +840,21 @@ namespace KerbalActuators
             //Rotation controls
             if (minRotateAngle != -1.0f)
             {
-                if (GUILayout.Button("Min"))
+                if (GUILayout.Button(ServoGUI.minIcon, ServoGUI.buttonOptions))
                     RotateToMin();
             }
 
-            if (GUILayout.RepeatButton("<"))
+            if (GUILayout.RepeatButton(ServoGUI.backIcon, ServoGUI.buttonOptions))
             {
                 RotateDown(rotationDegPerSec * TimeWarp.fixedDeltaTime);
                 if (!string.IsNullOrEmpty(runningEffectName))
                     this.part.Effect(runningEffectName, 1.0f);
             }
 
-            if (GUILayout.Button("0"))
+            if (GUILayout.Button(ServoGUI.homeIcon, ServoGUI.buttonOptions))
                 RotateToNeutral();
 
-            if (GUILayout.RepeatButton(">"))
+            if (GUILayout.RepeatButton(ServoGUI.forwardIcon, ServoGUI.buttonOptions))
             {
                 RotateUp(rotationDegPerSec * TimeWarp.fixedDeltaTime);
                 if (!string.IsNullOrEmpty(runningEffectName))
@@ -842,7 +863,7 @@ namespace KerbalActuators
 
             if (maxRotateAngle != -1.0f)
             {
-                if (GUILayout.Button("Max"))
+                if (GUILayout.Button(ServoGUI.maxIcon, ServoGUI.buttonOptions))
                     RotateToMax();
             }
 

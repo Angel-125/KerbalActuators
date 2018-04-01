@@ -298,6 +298,7 @@ namespace KerbalActuators
 
                 else
                 {
+                    Actions["ToggleThrustTransformAction"].actionGroup = KSPActionGroup.None;
                     Events["ToggleThrustTransform"].active = false;
                     Actions["ToggleThrustTransformAction"].active = false;
                 }

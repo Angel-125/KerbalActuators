@@ -1,4 +1,4 @@
-﻿/**
+﻿/*
  * Window.cs
  * 
  * Thunder Aerospace Corporation's library for the Kerbal Space Program, by Taranis Elsu
@@ -91,10 +91,7 @@ namespace KerbalActuators
 
             if (!newValue)
             {
-                if (HighLogic.LoadedSceneIsFlight)
-                    InputLockManager.RemoveControlLock("WindowLock" + windowId);
-                else if (HighLogic.LoadedSceneIsEditor)
-                    EditorLogic.fetch.Unlock("WindowLock" + windowId);
+                InputLockManager.SetControlLock(ControlTypes.None, "WindowLock" + this.windowId);
             }
         }
 
@@ -180,6 +177,15 @@ namespace KerbalActuators
                         GUILayout.ExpandHeight(true), GUILayout.MinWidth(64), GUILayout.MinHeight(64));
                 }
 
+                Vector3 mousePosition = Input.mousePosition;
+                if (windowPos.Contains(mousePosition))
+                {
+                    InputLockManager.SetControlLock(ControlTypes.All, "WindowLock" + this.windowId);
+                }
+                else
+                {
+                    InputLockManager.SetControlLock(ControlTypes.None, "WindowLock" + this.windowId);
+                }
             }
         }
 

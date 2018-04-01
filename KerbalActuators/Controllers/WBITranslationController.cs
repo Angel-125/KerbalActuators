@@ -23,11 +23,8 @@ namespace KerbalActuators
     public enum WBIMovementState
     {
         Locked,
-        MovingToMin,
-        MovingToMax,
-        MovingToNeutral,
-        MovingMinward,
-        MovingMaxward
+        MovingForward,
+        MovingBackward
     }
     #endregion
 
@@ -143,12 +140,15 @@ namespace KerbalActuators
         Vector3 vecMinPosition = Vector3.zero;
         Vector3 vecOriginalPos = Vector3.zero;
         Vector3 vecTargetPos = Vector3.zero;
+        float newTargetPosition = 0.0f;
+        string targetPositionText = "";
         #endregion
 
         #region Overrides
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
+            //Find the mesh transform
             meshTransform = this.part.FindModelTransform(meshTransformName);
             if (meshTransform == null)
                 return;
@@ -184,6 +184,10 @@ namespace KerbalActuators
             vecMinPosition = meshTransform.localPosition;
             meshTransform.localPosition = vecOriginalPos;
 
+            //Move to current position
+            if (currentPosition != 0)
+                meshTransform.Translate(translateAxis * currentPosition);
+
             //Setup status
             status = kLocked;
         }
@@ -195,124 +199,55 @@ namespace KerbalActuators
             if (movementState == WBIMovementState.Locked)
                 return;
 
-            //Play the moving sound
-            if (!string.IsNullOrEmpty(runningEffectName))
-                this.part.Effect(runningEffectName, 1.0f);
-
             //Calculate movement delta and update state
+            //Vector3.MoveTowards can also move meshTransform.localPosition but I've yet to figure out how to map the distance between meshTransform.localPosition and vecTargetPosition with minDistance and MaxDistance.
             float moveDelta = 0.0f;
-            float curPosMagnitude = meshTransform.localPosition.magnitude;
+            float distance = Vector3.Distance(vecMinPosition, meshTransform.localPosition);
             switch (movementState)
             {
                 default:
                 case WBIMovementState.Locked:
                     break;
 
-                case WBIMovementState.MovingMaxward:
-                    moveDelta = velocityPerUpdate;
+                case WBIMovementState.MovingBackward:
+                    moveDelta = -velocityPerUpdate;
 
-                    //Check for target distance
-                    if (curPosMagnitude >= vecTargetPos.magnitude)
+                    //Now check for target
+                    distance = Vector3.Distance(vecTargetPos, meshTransform.localPosition);
+                    if (distance <= 0.01f || currentPosition <= targetPosition)
                     {
                         movementState = WBIMovementState.Locked;
                         status = kLocked;
                         currentPosition = targetPosition;
+
+                        //For good measure, make sure our position is at the target
                         meshTransform.localPosition = vecTargetPos;
-                        return;
-                    }
-
-                    //Check for max distance
-                    else if (curPosMagnitude >= vecMaxPosition.magnitude)
-                    {
-                        movementState = WBIMovementState.Locked;
-                        status = kLocked;
-                        currentPosition = maxDistance;
-
-                        //For good measure, make sure our position is at the max
-                        meshTransform.localPosition = vecMaxPosition;
                         return;
                     }
                     break;
 
-                case WBIMovementState.MovingMinward:
-                    moveDelta = -velocityPerUpdate;
+                case WBIMovementState.MovingForward:
+                    moveDelta = velocityPerUpdate;
 
-                    //Check for target distance
-                    if (curPosMagnitude <= vecTargetPos.magnitude)
+                    //Now check for target
+                    distance = Vector3.Distance(vecTargetPos, meshTransform.localPosition);
+                    if (distance <= 0.01f || currentPosition >= targetPosition)
                     {
                         movementState = WBIMovementState.Locked;
                         status = kLocked;
                         currentPosition = targetPosition;
+
+                        //For good measure, make sure our position is at the target
                         meshTransform.localPosition = vecTargetPos;
                         return;
                     }
 
-                    //Check for min distance
-                    else if (meshTransform.localPosition.magnitude <= vecMinPosition.magnitude)
-                    {
-                        movementState = WBIMovementState.Locked;
-                        status = kLocked;
-                        currentPosition = minDistance;
-
-                        //For good measure, make sure our position is at the min
-                        meshTransform.localPosition = vecMinPosition;
-                        return;
-                    }
-                    break;
-
-                case WBIMovementState.MovingToMax:
-                    moveDelta = velocityPerUpdate;
-
-                    //Check for target
-                    if (meshTransform.localPosition.magnitude >= vecMaxPosition.magnitude)
-                    {
-                        movementState = WBIMovementState.Locked;
-                        status = kLocked;
-                        currentPosition = maxDistance;
-
-                        //For good measure, make sure our position is at the max
-                        meshTransform.localPosition = vecMaxPosition;
-                        return;
-                    }
-                    break;
-
-                case WBIMovementState.MovingToMin:
-                    moveDelta = -velocityPerUpdate;
-
-                    //Check for min distance
-                    Vector3 direction = vecMinPosition - meshTransform.localPosition;
-                    float angle = Vector3.SignedAngle(direction, meshTransform.forward, Vector3.up);
-                    if (angle != 0.0f)
-                    {
-                        movementState = WBIMovementState.Locked;
-                        status = kLocked;
-                        currentPosition = minDistance;
-
-                        //For good measure, make sure our position is at the min
-                        meshTransform.localPosition = vecMinPosition;
-                        return;
-                    }
-                    break;
-
-                case WBIMovementState.MovingToNeutral:
-                    if (currentPosition > 0.0f)
-                        moveDelta = -velocityPerUpdate;
-                    else
-                        moveDelta = velocityPerUpdate;
-
-                    //Check for neutral
-                    float origPosMagnitude = vecOriginalPos.magnitude;
-                    if (curPosMagnitude <= origPosMagnitude && moveDelta < 0.0f ||
-                    curPosMagnitude >= origPosMagnitude && moveDelta > 0.0f)
-                    {
-                        meshTransform.localPosition = vecOriginalPos;
-                        movementState = WBIMovementState.Locked;
-                        currentPosition = 0.0f;
-                        status = kLocked;
-                        return;
-                    }
                     break;
             }
+
+            //Play the moving sound
+            if (!string.IsNullOrEmpty(runningEffectName))
+                this.part.Effect(runningEffectName, 1.0f);
 
             //Update status
             status = kMoving;
@@ -321,7 +256,6 @@ namespace KerbalActuators
             //Move the mesh
             meshTransform.Translate(translateAxis * moveDelta);
         }
-
         #endregion
 
         #region IServoController
@@ -335,42 +269,15 @@ namespace KerbalActuators
             GUILayout.BeginVertical();
             GUILayout.BeginScrollView(scrollVector, panelOptions);
 
-            //Servo name
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("<b><color=white>" + servoName + "</color></b>");
-            GUILayout.FlexibleSpace();
-            GUILayout.Label(string.Format("<color=white><b>Dist: </b>{0:f2}m</color>", currentPosition));
-            GUILayout.EndHorizontal();
-
-            //Move speed
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("<color=white>Speed:</color>");
-
-            string metersPerSecText = string.Format("{0:f2}", velocityMetersPerSec);
-            metersPerSecText = GUILayout.TextField(metersPerSecText);
-            //metersPerSecText = Regex.Replace(metersPerSecText, @"[^0-9]", "");
-            float moveRate = 0.0f;
-            if (float.TryParse(metersPerSecText, out moveRate))
-            {
-                velocityMetersPerSec = moveRate;
-                velocityPerUpdate = velocityMetersPerSec * TimeWarp.fixedDeltaTime;
-            }
-
-            GUILayout.Label("<color=white>m/s</color>");
-            GUILayout.EndHorizontal();
-            GUILayout.BeginVertical();
+            //Info panel
+            drawinfoPanel();
 
             //Movement controls
+            GUILayout.BeginVertical();
             drawMovementControls();
-
-            //Move a specified distance
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("<color=white>Pos:</color>");
-            metersPerSecText = GUILayout.TextField(metersPerSecText);
-
-            GUILayout.EndHorizontal();
-
+            drawSetPosition();
             GUILayout.EndVertical();
+
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
         }
@@ -391,12 +298,18 @@ namespace KerbalActuators
             ConfigNode node = new ConfigNode(WBIServoManager.SERVODATA_NODE);
 
             node.AddValue("servoName", servoName);
+            node.AddValue("velocityMetersPerSec", velocityMetersPerSec);
+            node.AddValue("targetPosition", targetPosition);
 
             return node;
         }
 
         public void SetFromSnapshot(ConfigNode node)
         {
+            float.TryParse(node.GetValue("velocityMetersPerSec"), out velocityMetersPerSec);
+            float.TryParse(node.GetValue("targetPosition"), out targetPosition);
+
+            moveToTarget();
         }
 
         public bool IsMoving()
@@ -411,6 +324,77 @@ namespace KerbalActuators
         #endregion
 
         #region Helpers
+        protected void moveToTarget()
+        {
+            //Set movement state
+            if (currentPosition < targetPosition)
+                movementState = WBIMovementState.MovingForward;
+            else
+                movementState = WBIMovementState.MovingBackward;
+
+            //Set up the target position vector
+            Vector3 currentPos = meshTransform.localPosition;
+            meshTransform.localPosition = vecOriginalPos;
+            meshTransform.Translate(translateAxis * targetPosition);
+            vecTargetPos = meshTransform.localPosition;
+            meshTransform.localPosition = currentPos;
+        }
+
+        protected void drawSetPosition()
+        {
+            //Move a specified distance
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("<color=white>Position:</color>");
+            targetPositionText = GUILayout.TextField(targetPositionText);
+
+            if (GUILayout.Button("Set"))
+            {
+                if (float.TryParse(targetPositionText, out newTargetPosition))
+                {
+                    //Make sure we're in bounds
+                    if (newTargetPosition < minDistance)
+                        newTargetPosition = minDistance;
+                    else if (newTargetPosition > maxDistance)
+                        newTargetPosition = maxDistance;
+
+                    //Set target position
+                    targetPosition = newTargetPosition;
+                    targetPositionText = string.Format("{0:f2}", newTargetPosition);
+
+                    //Move to target
+                    moveToTarget();
+                }
+            }
+
+            GUILayout.EndHorizontal();
+        }
+
+        protected void drawinfoPanel()
+        {
+            //Servo name
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("<b><color=white>" + servoName + "</color></b>");
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(string.Format("<color=white><b>Dist: </b>{0:f2}m</color>", currentPosition));
+            GUILayout.EndHorizontal();
+
+            //Move speed
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("<color=white>Speed:</color>");
+
+            string metersPerSecText = string.Format("{0:f2}", velocityMetersPerSec);
+            metersPerSecText = GUILayout.TextField(metersPerSecText);
+            float moveRate = 0.0f;
+            if (float.TryParse(metersPerSecText, out moveRate))
+            {
+                velocityMetersPerSec = moveRate;
+                velocityPerUpdate = velocityMetersPerSec * TimeWarp.fixedDeltaTime;
+            }
+
+            GUILayout.Label("<color=white>m/s</color>");
+            GUILayout.EndHorizontal();
+        }
+
         protected void drawMovementControls()
         {
             GUILayout.BeginHorizontal();
@@ -420,66 +404,66 @@ namespace KerbalActuators
             if (hasMinDistance)
             {
                 //Min
-                if (GUILayout.Button("Min") && meshTransform.localPosition != vecMinPosition)
+                if (GUILayout.Button(ServoGUI.minIcon, ServoGUI.buttonOptions) && meshTransform.localPosition != vecMinPosition)
                 {
-                    movementState = WBIMovementState.MovingToMin;
                     targetPosition = minDistance;
+                    moveToTarget();
                 }
             }
 
             //Towards min
-            if (GUILayout.RepeatButton("<") && meshTransform.localPosition != vecMinPosition)
+            if (GUILayout.RepeatButton(ServoGUI.backIcon, ServoGUI.buttonOptions) && meshTransform.localPosition != vecMinPosition)
             {
-                //Moveit
-                meshTransform.Translate(translateAxis * -velocityPerUpdate);
-                status = kMoving;
-                currentPosition -= velocityPerUpdate;
-
-                //Check for min distance
-                Vector3 direction = vecMinPosition - meshTransform.localPosition;
-                float angle = Vector3.SignedAngle(direction, meshTransform.forward, Vector3.up);
-                if (angle != 0.0f)
+                targetPosition = currentPosition - velocityPerUpdate;
+                if (targetPosition > minDistance)
                 {
+                    moveToTarget();
+
+                    if (HighLogic.LoadedSceneIsFlight)
+                        this.part.Effect(runningEffectName, 1.0f);
+                }
+                else
+                {
+                    targetPosition = minDistance;
+                    currentPosition = minDistance;
+                    meshTransform.localPosition = vecMinPosition;
                     movementState = WBIMovementState.Locked;
                     status = kLocked;
-                    currentPosition = minDistance;
 
-                    //For good measure, make sure our position is at the max
-                    meshTransform.localPosition = vecMinPosition;
+                    if (HighLogic.LoadedSceneIsFlight)
+                        this.part.Effect(runningEffectName, 1.0f);
                 }
-
-                if (!string.IsNullOrEmpty(runningEffectName))
-                    this.part.Effect(runningEffectName, 1.0f);
             }
 
             //0
-            if (GUILayout.Button("0") && currentPosition != 0.0f)
+            if (GUILayout.Button(ServoGUI.homeIcon, ServoGUI.buttonOptions) && currentPosition != 0.0f)
             {
-                movementState = WBIMovementState.MovingToNeutral;
                 targetPosition = 0f;
+                moveToTarget();
             }
 
             //Towards max
-            if (GUILayout.RepeatButton(">") && meshTransform.localPosition != vecMaxPosition)
+            if (GUILayout.RepeatButton(ServoGUI.forwardIcon, ServoGUI.buttonOptions) && meshTransform.localPosition != vecMaxPosition)
             {
-                //Moveit
-                meshTransform.Translate(translateAxis * velocityPerUpdate);
-                status = kMoving;
-                currentPosition += velocityPerUpdate;
-
-                //Check for max distance
-                if (meshTransform.localPosition.magnitude >= vecMaxPosition.magnitude)
+                targetPosition = currentPosition + velocityPerUpdate;
+                if (targetPosition < maxDistance)
                 {
+                    moveToTarget();
+
+                    if (HighLogic.LoadedSceneIsFlight)
+                        this.part.Effect(runningEffectName, 1.0f);
+                }
+                else
+                {
+                    targetPosition = maxDistance;
+                    currentPosition = maxDistance;
+                    meshTransform.localPosition = vecMaxPosition;
                     movementState = WBIMovementState.Locked;
                     status = kLocked;
-                    currentPosition = maxDistance;
 
-                    //For good measure, make sure our position is at the max
-                    meshTransform.localPosition = vecMaxPosition;
+                    if (HighLogic.LoadedSceneIsFlight)
+                        this.part.Effect(runningEffectName, 1.0f);
                 }
-
-                if (!string.IsNullOrEmpty(runningEffectName))
-                    this.part.Effect(runningEffectName, 1.0f);
             }
 
             //If we don't have a max distance, then the Max button and the 0 button do the same thing,
@@ -487,10 +471,10 @@ namespace KerbalActuators
             if (hasMaxDistance)
             {
                 //Max
-                if (GUILayout.Button("Max") && meshTransform.localPosition != vecMaxPosition)
+                if (GUILayout.Button(ServoGUI.maxIcon, ServoGUI.buttonOptions) && meshTransform.localPosition != vecMaxPosition)
                 {
-                    movementState = WBIMovementState.MovingToMax;
                     targetPosition = maxDistance;
+                    moveToTarget();
                 }
             }
             GUILayout.EndHorizontal();
