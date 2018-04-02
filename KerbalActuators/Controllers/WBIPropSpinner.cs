@@ -302,8 +302,11 @@ namespace KerbalActuators
                     Events["ToggleThrustTransform"].active = false;
                     Actions["ToggleThrustTransformAction"].active = false;
                 }
-                
-
+            }
+            else
+            {
+                fwdThrustTransform = this.part.FindModelTransform(thrustTransform);
+                revThrustTransform = fwdThrustTransform;
             }
 
             //Rotor transforms
@@ -339,8 +342,7 @@ namespace KerbalActuators
         public void ToggleThrustTransform()
         {
             reverseThrust = !reverseThrust;
-            SetupThrustTransform();
-            HandleReverseThrustAnimation();
+            SetReverseThrust(reverseThrust);
 
             //Don't forget the symmetrical parts...
             if (this.part.symmetryCounterparts.Count > 0)
@@ -350,9 +352,7 @@ namespace KerbalActuators
                     WBIPropSpinner propController = symmetryPart.GetComponent<WBIPropSpinner>();
                     if (propController != null)
                     {
-                        propController.reverseThrust = this.reverseThrust;
-                        propController.SetupThrustTransform();
-                        propController.HandleReverseThrustAnimation();
+                        propController.SetReverseThrust(reverseThrust);
                     }
                 }
             }
@@ -360,7 +360,7 @@ namespace KerbalActuators
         }
 
         /// <summary>
-        /// Sets the thrust mode and plays the associated reverse-thrust andimation if any.
+        /// Sets the thrust mode and plays the associated reverse-thrust animation if any.
         /// </summary>
         /// <param name="isReverseThrust">True if the thrust is reversed, false if not.</param>
         public virtual void SetReverseThrust(bool isReverseThrust)
@@ -368,6 +368,20 @@ namespace KerbalActuators
             reverseThrust = isReverseThrust;
             SetupThrustTransform();
             HandleReverseThrustAnimation();
+
+            //Look for other prop spinners in this part and reverse them too.
+            List<WBIPropSpinner> spinners = this.part.FindModulesImplementing<WBIPropSpinner>();
+            int count = spinners.Count;
+            for (int index = 0; index < count; index++)
+            {
+                if (spinners[index] == this)
+                {
+                    continue;
+                }
+                spinners[index].reverseThrust = this.reverseThrust;
+                spinners[index].SetupThrustTransform();
+                spinners[index].HandleReverseThrustAnimation();
+            }
         }
 
         /// <summary>

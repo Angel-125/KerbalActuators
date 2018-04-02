@@ -20,10 +20,24 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 namespace KerbalActuators
 {
     #region WBIMovementState
+    /// <summary>
+    /// This enum describes the current state of the translation controller.
+    /// </summary>
     public enum WBIMovementState
     {
+        /// <summary>
+        /// Controller is locked and not moving.
+        /// </summary>
         Locked,
+
+        /// <summary>
+        /// Controller is moving forward. "Forward" is relative to the axis of movement.
+        /// </summary>
         MovingForward,
+
+        /// <summary>
+        /// Controller is moving backward. "Backward" is relative to the axis of movement.
+        /// </summary>
         MovingBackward
     }
     #endregion
@@ -259,11 +273,18 @@ namespace KerbalActuators
         #endregion
 
         #region IServoController
+        /// <summary>
+        /// Returns the group ID of the servo. Used by the servo manager to know what servos it controlls.
+        /// </summary>
+        /// <returns>A string containing the group ID</returns>
         public string GetGroupID()
         {
             return groupID;
         }
 
+        /// <summary>
+        /// Tells the servo to draw its GUI controls. It's used by the servo manager.
+        /// </summary>
         public void DrawControls()
         {
             GUILayout.BeginVertical();
@@ -282,17 +303,28 @@ namespace KerbalActuators
             GUILayout.EndVertical();
         }
 
+        /// <summary>
+        /// Hides the GUI controls in the Part Action Window.
+        /// </summary>
         public void HideGUI()
         {
             Fields["status"].guiActive = false;
             Fields["status"].guiActiveEditor = false;
         }
 
+        /// <summary>
+        /// Returns the panel height for the servo manager's GUI.
+        /// </summary>
+        /// <returns>An Int containing the height of the panel.</returns>
         public int GetPanelHeight()
         {
             return kPanelHeight;
         }
 
+        /// <summary>
+        /// Takes a snapshot of the current state of the servo.
+        /// </summary>
+        /// <returns>A SERVODATA_NODE ConfigNode containing the servo's state</returns>
         public ConfigNode TakeSnapshot()
         {
             ConfigNode node = new ConfigNode(WBIServoManager.SERVODATA_NODE);
@@ -304,6 +336,10 @@ namespace KerbalActuators
             return node;
         }
 
+        /// <summary>
+        /// Sets the servo's state based upon the supplied config node.
+        /// </summary>
+        /// <param name="node">A SERVODAT_NODE ConfigNode containing servo state data.</param>
         public void SetFromSnapshot(ConfigNode node)
         {
             float.TryParse(node.GetValue("velocityMetersPerSec"), out velocityMetersPerSec);
@@ -312,11 +348,18 @@ namespace KerbalActuators
             moveToTarget();
         }
 
+        /// <summary>
+        /// Determines whether or not the servo is moving
+        /// </summary>
+        /// <returns>True if the servo is moving, false if not.</returns>
         public bool IsMoving()
         {
             return movementState != WBIMovementState.Locked ? true : false;
         }
 
+        /// <summary>
+        /// Tells the servo to stop moving.
+        /// </summary>
         public void StopMoving()
         {
             movementState = WBIMovementState.Locked;

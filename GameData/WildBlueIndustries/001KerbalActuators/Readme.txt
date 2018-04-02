@@ -16,13 +16,18 @@ WBIAirParkController: Enables a vessel to "part" in mid air and be treated as if
 
 For a description of the API, go to https://github.com/Angel-125/KerbalActuators/wiki
 
+KerbalActuators comes with two sample parts: SampleArm and SampleCrane. To use these parts, you'll need to rename the config files, found in Parts/Utility from .txt to .cfg.
+
 ---INSTALLATION---
 
 Copy the contents of the mod's GameData directory into your GameData folder.
 
 ---REVISION HISORY---
 
-1.3.0
+1.3.0.3
+- Minor fixes for reverse-thrust in WBIPropSpinner.
+
+1.3.0.2
 New Actuators
 - WBITranslationController: This part module lets you move mesh transforms around.
 

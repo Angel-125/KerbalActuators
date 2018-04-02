@@ -3,6 +3,8 @@ This class implements a magnet that's used for moving other parts around. It doe
         
 ## Fields
 
+### guiVisible
+Sets the visibility state of the Part Action Window controls.
 ### debugMode
 Flag to indicate if we should operate in debug mode
 ### ecPerSec
@@ -64,6 +66,9 @@ Sets the servo's state based upon the supplied config node.
 Determines whether or not the servo is moving
 > #### Return value
 > True if the servo is moving, false if not.
+
+### StopMoving
+Tells the servo to stop moving.
 
 ### GetGroupID
 Returns the group ID of the servo. Used by the servo manager to know what servos it controlls.

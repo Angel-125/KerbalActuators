@@ -66,3 +66,6 @@ Creates a home sequence from the supplied config node.
 > **node:** A SEQUENCE_NOD ConfigNode containing the new home sequence
 
 
+### StopAllServos
+Immediately stops all servos from moving.
+

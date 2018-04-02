@@ -36,3 +36,6 @@ Indicates whether or not the servo controller is moving in some way.
 > #### Return value
 > True if moving, false if not.
 
+### StopMoving
+Tells the servo to stop moving.
+

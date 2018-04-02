@@ -549,6 +549,26 @@
             </summary>
             <returns>A string containing the group ID</returns>
         </member>
+        <member name="T:KerbalActuators.WBIMovementState">
+            <summary>
+            This enum describes the current state of the translation controller.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBIMovementState.Locked">
+            <summary>
+            Controller is locked and not moving.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBIMovementState.MovingForward">
+            <summary>
+            Controller is moving forward. "Forward" is relative to the axis of movement.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBIMovementState.MovingBackward">
+            <summary>
+            Controller is moving backward. "Backward" is relative to the axis of movement.
+            </summary>
+        </member>
         <member name="T:KerbalActuators.WBITranslationController">
             <summary>
             Instead of rotating a mesh transform, the WBITranslationContorller can move the mesh around along its X, Y, and Z axis.
@@ -628,6 +648,51 @@
         <member name="F:KerbalActuators.WBITranslationController.status">
             <summary>
             User-friendly status display.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.GetGroupID">
+            <summary>
+            Returns the group ID of the servo. Used by the servo manager to know what servos it controlls.
+            </summary>
+            <returns>A string containing the group ID</returns>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.DrawControls">
+            <summary>
+            Tells the servo to draw its GUI controls. It's used by the servo manager.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.HideGUI">
+            <summary>
+            Hides the GUI controls in the Part Action Window.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.GetPanelHeight">
+            <summary>
+            Returns the panel height for the servo manager's GUI.
+            </summary>
+            <returns>An Int containing the height of the panel.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.TakeSnapshot">
+            <summary>
+            Takes a snapshot of the current state of the servo.
+            </summary>
+            <returns>A SERVODATA_NODE ConfigNode containing the servo's state</returns>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.SetFromSnapshot(ConfigNode)">
+            <summary>
+            Sets the servo's state based upon the supplied config node.
+            </summary>
+            <param name="node">A SERVODAT_NODE ConfigNode containing servo state data.</param>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.IsMoving">
+            <summary>
+            Determines whether or not the servo is moving
+            </summary>
+            <returns>True if the servo is moving, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.StopMoving">
+            <summary>
+            Tells the servo to stop moving.
             </summary>
         </member>
         <member name="T:KerbalActuators.IPropSpinner">
@@ -792,7 +857,7 @@
         </member>
         <member name="M:KerbalActuators.WBIPropSpinner.SetReverseThrust(System.Boolean)">
             <summary>
-            Sets the thrust mode and plays the associated reverse-thrust andimation if any.
+            Sets the thrust mode and plays the associated reverse-thrust animation if any.
             </summary>
             <param name="isReverseThrust">True if the thrust is reversed, false if not.</param>
         </member>
