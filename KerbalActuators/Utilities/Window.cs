@@ -177,14 +177,17 @@ namespace KerbalActuators
                         GUILayout.ExpandHeight(true), GUILayout.MinWidth(64), GUILayout.MinHeight(64));
                 }
 
-                Vector3 mousePosition = Input.mousePosition;
-                if (windowPos.Contains(mousePosition))
+                if (!HighLogic.LoadedSceneIsFlight)
                 {
-                    InputLockManager.SetControlLock(ControlTypes.All, "WindowLock" + this.windowId);
-                }
-                else
-                {
-                    InputLockManager.SetControlLock(ControlTypes.None, "WindowLock" + this.windowId);
+                    Vector3 mousePosition = Input.mousePosition;
+                    if (windowPos.Contains(mousePosition))
+                    {
+                        InputLockManager.SetControlLock(ControlTypes.All, "WindowLock" + this.windowId);
+                    }
+                    else
+                    {
+                        InputLockManager.SetControlLock(ControlTypes.None, "WindowLock" + this.windowId);
+                    }
                 }
             }
         }
