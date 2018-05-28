@@ -168,6 +168,12 @@
             </summary>
             <param name="throttleValue">A float containing the throttle value.</param>
         </member>
+        <member name="M:KerbalActuators.IHoverController.GetHoverState">
+            <summary>
+            Returns the current hover state
+            </summary>
+            <returns>true if hover is active, false if not.</returns>
+        </member>
         <member name="M:KerbalActuators.IHoverController.SetHoverMode(System.Boolean)">
             <summary>
             Tells the controller to set the hover mode.
@@ -226,6 +232,12 @@
             <summary>
             This event toggles the hover mode.
             </summary>
+        </member>
+        <member name="M:KerbalActuators.WBIHoverController.GetHoverState">
+            <summary>
+            Determines whether or not the hover is active
+            </summary>
+            <returns>True if active, false if not</returns>
         </member>
         <member name="M:KerbalActuators.WBIHoverController.IsEngineActive">
             <summary>

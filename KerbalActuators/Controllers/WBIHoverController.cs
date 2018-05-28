@@ -47,6 +47,12 @@ namespace KerbalActuators
         void UpdateHoverState(float throttleValue);
 
         /// <summary>
+        /// Returns the current hover state
+        /// </summary>
+        /// <returns>true if hover is active, false if not.</returns>
+        bool GetHoverState();
+
+        /// <summary>
         /// Tells the controller to set the hover mode.
         /// </summary>
         /// <param name="isActive">True if hover mode is active, false if not.</param>
@@ -149,6 +155,15 @@ namespace KerbalActuators
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Determines whether or not the hover is active
+        /// </summary>
+        /// <returns>True if active, false if not</returns>
+        public virtual bool GetHoverState()
+        {
+            return hoverActive;
         }
 
         /// <summary>

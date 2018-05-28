@@ -180,10 +180,14 @@ namespace KerbalActuators
             else
                 throttleState = 1.0f;
 
+            bool allHoverStatesActive = true;
             for (int index = 0; index < hoverControllers.Length; index++)
             {
                 hoverControllers[index].UpdateHoverState(throttleState);
+                allHoverStatesActive = hoverControllers[index].GetHoverState();
             }
+            if (!allHoverStatesActive)
+                ToggleHover();
         }
         #endregion
 
