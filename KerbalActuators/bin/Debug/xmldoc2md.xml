@@ -223,6 +223,11 @@
             A flag to indicate whether or not the Part Action Window GUI is active.
             </summary>
         </member>
+        <member name="F:KerbalActuators.WBIHoverController.updateThrottle">
+            <summary>
+            Tells the hover controller to update the throttle.
+            </summary>
+        </member>
         <member name="F:KerbalActuators.WBIHoverController.engine">
             <summary>
             The current engine to update during hover state updates.

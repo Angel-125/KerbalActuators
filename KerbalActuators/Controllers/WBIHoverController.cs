@@ -109,6 +109,12 @@ namespace KerbalActuators
         public bool guiVisible = true;
 
         /// <summary>
+        /// Tells the hover controller to update the throttle.
+        /// </summary>
+        [KSPField]
+        public bool updateThrottle = false;
+
+        /// <summary>
         /// A HoverUpdateEvent that's fired when the hover state changes.
         /// </summary>
         public event HoverUpdateEvent onHoverUpdate;
@@ -121,6 +127,7 @@ namespace KerbalActuators
 
         #region Housekeeping
         protected MultiModeEngine engineSwitcher;
+        protected WBIMultiModeEngine wbiMultiModeEngine;
         protected Dictionary<string, ModuleEnginesFX> multiModeEngines = new Dictionary<string, ModuleEnginesFX>();
         #endregion
 
@@ -218,11 +225,21 @@ namespace KerbalActuators
             //engine.finalThrust, engine.maxThrust, and the force needed to make the craft hover.
             float throttleState = 0;
             if (this.part.vessel.verticalSpeed >= verticalSpeed)
+            {
                 throttleState = 0f;
-            else
-                throttleState = 1.0f;
 
-            engine.currentThrottle = throttleState * engine.thrustPercentage / 100.0f;
+                //Throttle 0 will kill the power effect so play it manually.
+                this.part.Effect(engine.powerEffectName, 1.0f);
+            }
+            else
+            {
+                throttleState = 1.0f;
+            }
+
+            if (updateThrottle)
+                this.vessel.ctrlState.mainThrottle = throttleState * (engine.thrustPercentage / 100.0f);
+            else
+                engine.currentThrottle = throttleState * (engine.thrustPercentage / 100.0f);
         }
 
         /// <summary>
@@ -399,8 +416,11 @@ namespace KerbalActuators
             if (engine == null)
                 setupEngines();
 
+            if (wbiMultiModeEngine != null)
+                engine = wbiMultiModeEngine.currentEngine;
+
             //If we have multiple engines, make sure we have the current one.
-            if (engineSwitcher != null)
+            else if (engineSwitcher != null)
             {
                 if (engineSwitcher.runningPrimary)
                     engine = multiModeEngines[engineSwitcher.primaryEngineID];
@@ -411,6 +431,13 @@ namespace KerbalActuators
 
         protected void setupEngines()
         {
+            wbiMultiModeEngine = this.part.FindModuleImplementing<WBIMultiModeEngine>();
+            if (wbiMultiModeEngine != null)
+            {
+                engine = wbiMultiModeEngine.currentEngine;
+                return;
+            }
+
             //See if we have multiple engines that we need to support
             engineSwitcher = this.part.FindModuleImplementing<MultiModeEngine>();
             if (engineSwitcher != null)
@@ -421,8 +448,6 @@ namespace KerbalActuators
                 {
                     multiModeEngines.Add(multiEngine.engineID, multiEngine);
                 }
-
-                foreach (string key in multiModeEngines.Keys)
 
                 engine = multiModeEngines[engineSwitcher.primaryEngineID];
                 return;
