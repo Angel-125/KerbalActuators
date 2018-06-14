@@ -24,6 +24,9 @@ Copy the contents of the mod's GameData directory into your GameData folder.
 
 ---REVISION HISORY---
 
+1.4.5
+- Added additional infrastructure to support 3rd party mods like MOARdV Avionics Systems.
+
 1.4.0.0
 - Added new WBIMultiModeEngine. It works like the stock MultiModeEngine except that you can switch between any number of engines instead of just two. It also is tied into the WBIHoverController.
 

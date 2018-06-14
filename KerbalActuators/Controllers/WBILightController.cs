@@ -19,6 +19,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace KerbalActuators
 {
+    public interface ILightController : IGenericController
+    {
+        void TurnOnLights();
+        void TurnOffLights();
+        void SetupLight(Color color, float lightLevel);
+    }
+
     /// <summary>
     /// Derived from the stock ModuleLight, this controller lets you control a light through the Servo Manager.
     /// Unlike a stock light, you can change the color tint in flight.
@@ -99,6 +106,7 @@ namespace KerbalActuators
         #endregion
 
         #region API
+
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
@@ -471,5 +479,28 @@ namespace KerbalActuators
         }
         #endregion
 
+        #region ILightController
+        /// <summary>
+        /// Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+        /// </summary>
+        /// <returns>True if the controller is active, false if not.</returns>
+        public bool IsActive()
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Sets up the light color and intensity.
+        /// </summary>
+        /// <param name="color">A Color structure containing the light colors.</param>
+        /// <param name="lightLevel">The intensity level of the lights</param>
+        public void SetupLight(Color color, float lightLevel)
+        {
+            red = color.r;
+            green = color.g;
+            blue = color.b;
+            intensity = lightLevel;
+        }
+        #endregion
     }
 }

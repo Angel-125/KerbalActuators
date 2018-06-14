@@ -19,27 +19,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace KerbalActuators
 {
-    public enum WBIThrustModes
-    {
-        Forward,
-        Reverse,
-        VTOL
-    }
-
-    public interface IThrustVectorController
-    {
-        void SetForwardThrust(WBIVTOLManager vtolManager);
-        void SetReverseThrust(WBIVTOLManager vtolManager);
-        void SetVTOLThrust(WBIVTOLManager vtolManager);
-        WBIThrustModes GetThrustMode();
-    }
-
-    public interface ICustomController
-    {
-        bool IsVisible();
-        void DrawCustomController();
-    }
-
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class WBIVTOLManager : MonoBehaviour
     {
@@ -72,6 +51,53 @@ namespace KerbalActuators
         private string hoverControlsPath;
 
         #region API
+        /// <summary>
+        /// Returns an array of IGenericController interfaces if there are any. IGenericController is the base interface for controllers like IHoverController and IRotationController.
+        /// </summary>
+        /// <returns>An array containing IGenericController interfaces if there are any controllers, or null if there are none.</returns>
+        public IGenericController[] GetAllControllers()
+        {
+            List<IGenericController> controllers = new List<IGenericController>();
+
+            //Air Park
+            if (airParkController != null)
+                controllers.Add(airParkController);
+
+            //Hover controllers
+            if (hoverControllers != null)
+            {
+                for (int index = 0; index < hoverControllers.Length; index++)
+                    controllers.Add(hoverControllers[index]);
+            }
+
+            //Rotation controllers
+            if (hoverControllers != null)
+            {
+                for (int index = 0; index < hoverControllers.Length; index++)
+                    controllers.Add(hoverControllers[index]);
+            }
+
+            //Thrust Vector controllers
+            if (thrustVectorControllers != null)
+            {
+                for (int index = 0; index < thrustVectorControllers.Length; index++)
+                    controllers.Add(thrustVectorControllers[index]);
+            }
+
+            //Custom controllers
+            if (customControllers != null)
+            {
+                for (int index = 0; index < customControllers.Length; index++)
+                    controllers.Add(customControllers[index]);
+            }
+
+            //Return the controllers
+            if (controllers.Count > 0)
+                return controllers.ToArray();
+            else
+                return null;
+        }
+
         public void FindControllers(Vessel vessel)
         {
             this.vessel = vessel;
@@ -104,14 +130,10 @@ namespace KerbalActuators
         {
             if (!hoverGUI.IsVisible())
             {
-//                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI);
-//                WBIActuatorsGUIMgr.Instance.RegisterWindow(hoverGUI.hoverSetupGUI);
                 ShowGUI();
             }
             else
             {
-//                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI);
-//                WBIActuatorsGUIMgr.Instance.UnregisterWindow(hoverGUI.hoverSetupGUI);
                 hoverGUI.SetVisible(false);
             }
         }
@@ -197,6 +219,24 @@ namespace KerbalActuators
             airParkController = FlightGlobals.ActiveVessel.FindPartModuleImplementing<IAirParkController>();
         }
 
+        /// <summary>
+        /// Determines whether or not the air park controller is active.
+        /// </summary>
+        /// <returns>True if active, false if not.</returns>
+        public bool AirParkControllerActive()
+        {
+            return (airParkController == null) ? false : true;
+        }
+
+        /// <summary>
+        /// Returns the Air Park controller, if any.
+        /// </summary>
+        /// <returns>An IAirParkController interface if the vessel has an air park controller, or null if not.</returns>
+        public IAirParkController GetAirParkController()
+        {
+            return airParkController;
+        }
+
         public bool IsParked()
         {
             if (airParkController == null)
@@ -244,6 +284,75 @@ namespace KerbalActuators
 
             if (rotationControllerList.Count > 0)
                 rotationControllers = rotationControllerList.ToArray();
+        }
+
+        /// <summary>
+        /// Determines whether or not the vessel has rotation controllers.
+        /// </summary>
+        /// <returns>True if there are rotation controllers, false if not.</returns>
+        public bool HasRotationControllers()
+        {
+            return (rotationControllers == null || rotationControllers.Length == 0) ? false : true;
+        }
+
+        /// <summary>
+        /// Returns the rotation controllers, if any.
+        /// </summary>
+        /// <returns>An array of IRotationController interfaces if the vessel has rotation controllers, or null if not.</returns>
+        public IRotationController[] GetRotationControllers()
+        {
+            return rotationControllers;
+        }
+
+        public float GetMinRotation()
+        {
+            if (rotationControllers == null || rotationControllers.Length == 0)
+                return -1.0f;
+
+            //Making the assumption that the vessel could have more than one type of rotating engine, and we want the ones that are active.
+            for (int index = 0; index < rotationControllers.Length; index++)
+            {
+                if (rotationControllers[index].IsActive())
+                {
+                    return rotationControllers[index].GetMinRotation();
+                }
+            }
+
+            return -1.0f;
+        }
+
+        public float GetMaxRotation()
+        {
+            if (rotationControllers == null || rotationControllers.Length == 0)
+                return -1.0f;
+
+            //Making the assumption that the vessel could have more than one type of rotating engine, and we want the ones that are active.
+            for (int index = 0; index < rotationControllers.Length; index++)
+            {
+                if (rotationControllers[index].IsActive())
+                {
+                    return rotationControllers[index].GetMaxRotation();
+                }
+            }
+
+            return -1.0f;
+        }
+
+        public float GetCurrentRotation()
+        {
+            if (rotationControllers == null || rotationControllers.Length == 0)
+                return -1.0f;
+
+            //Making the assumption that the vessel could have more than one type of rotating engine, and we want the ones that are active.
+            for (int index = 0; index < rotationControllers.Length; index++)
+            {
+                if (rotationControllers[index].IsActive())
+                {
+                    return rotationControllers[index].GetCurrentRotation();
+                }
+            }
+
+            return -1.0f;
         }
 
         public bool CanRotateMin()
@@ -327,6 +436,24 @@ namespace KerbalActuators
 
             if (controllers.Count > 0)
                 hoverControllers = controllers.ToArray();
+        }
+
+        /// <summary>
+        /// Determines whether or not the hover controller is active.
+        /// </summary>
+        /// <returns>True if active, false if not.</returns>
+        public bool HoverControllerActive()
+        {
+            return (hoverControllers == null || hoverControllers.Length == 0) ? false : true;
+        }
+
+        /// <summary>
+        /// Returns the hover controllers, if any.
+        /// </summary>
+        /// <returns>An array of IHoverController interfaces if the vessel has hover controllers, or null if not.</returns>
+        public IHoverController[] GetHoverControllers()
+        {
+            return hoverControllers;
         }
 
         public bool EnginesAreActive()
@@ -437,6 +564,24 @@ namespace KerbalActuators
             }
         }
 
+        /// <summary>
+        /// Determines whether or not the thrust vector controller is active.
+        /// </summary>
+        /// <returns>True if active, false if not.</returns>
+        public bool ThrustVectorControllerActive()
+        {
+            return (thrustVectorControllers == null || thrustVectorControllers.Length == 0) ? false : true;
+        }
+
+        /// <summary>
+        /// Returns the thrust vector controllers, if any.
+        /// </summary>
+        /// <returns>An array of IThrustVectorController interfaces if the vessel has thrust vector controllers, or null if not.</returns>
+        public IThrustVectorController[] GetThrustVectorControllers()
+        {
+            return thrustVectorControllers;
+        }
+
         public void SetForwardThrust()
         {
             thrustMode = WBIThrustModes.Forward;
@@ -474,6 +619,15 @@ namespace KerbalActuators
                 customControllers = null;
                 hoverGUI.customControllers = null;
             }
+        }
+
+        /// <summary>
+        /// Returns the custom controllers, if any.
+        /// </summary>
+        /// <returns>An array of ICustomController interfaces if the vessel has custom controllers, or null if not.</returns>
+        public ICustomController[] GetCustomControllers()
+        {
+            return customControllers;
         }
         #endregion
 

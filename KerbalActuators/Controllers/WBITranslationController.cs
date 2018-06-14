@@ -42,10 +42,58 @@ namespace KerbalActuators
     }
     #endregion
 
+    #region ITranslationController
+    /// <summary>
+    /// This controller handles translation of the object's mesh.
+    /// </summary>
+    public interface ITranslationController
+    {
+        /// <summary>
+        /// Moves to the minimum position.
+        /// </summary>
+        void MoveToMin();
+
+        /// <summary>
+        /// Moves to the maxiumum position.
+        /// </summary>
+        void MoveToMax();
+
+        /// <summary>
+        /// Moves to the neutral position.
+        /// </summary>
+        void MoveToNeutral();
+
+            /// <summary>
+        /// Determines whether or not the controller has a minimum distance.
+        /// </summary>
+        /// <returns>True if there's a limit, false if not.</returns>
+        bool HasMinDistance();
+
+
+        /// <summary>
+        /// Determines whether or not the controller has a maximum distance.
+        /// </summary>
+        /// <returns>True if there's a limit, false if not.</returns>
+        bool HasMaxDistance();
+
+        /// <summary>
+        /// Sets the target position.
+        /// </summary>
+        /// <param name="targetPosition">A float containing the target position. Must be within minimum and maximum distance.</param>
+        void SetTargetPosition(float position);
+
+        /// <summary>
+        /// Sets the velocity of the movement in meters per second.
+        /// </summary>
+        /// <param name="velocity">A float containing the desired velocity in meters per second.</param>
+        void SetVelocity(float velocity);
+    }
+    #endregion
+
     /// <summary>
     /// Instead of rotating a mesh transform, the WBITranslationContorller can move the mesh around along its X, Y, and Z axis.
     /// </summary>
-    public class WBITranslationController: PartModule, IServoController
+    public class WBITranslationController: PartModule, IServoController, ITranslationController
     {
         const int kPanelHeight = 130;
         const string kMoving = "Moving";
@@ -363,6 +411,95 @@ namespace KerbalActuators
         public void StopMoving()
         {
             movementState = WBIMovementState.Locked;
+        }
+        #endregion
+
+        #region ITranslationController
+        /// <summary>
+        /// Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+        /// </summary>
+        /// <returns>True if the controller is active, false if not.</returns>
+        public bool IsActive()
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Moves to the minimum position.
+        /// </summary>
+        public void MoveToMin()
+        {
+            targetPosition = minDistance;
+            moveToTarget();
+        }
+
+        /// <summary>
+        /// Moves to the maxiumum position.
+        /// </summary>
+        public void MoveToMax()
+        {
+            targetPosition = maxDistance;
+            moveToTarget();
+        }
+
+        /// <summary>
+        /// Moves to the neutral position.
+        /// </summary>
+        public void MoveToNeutral()
+        {
+            targetPosition = 0f;
+            moveToTarget();
+        }
+
+        /// <summary>
+        /// Determines whether or not the controller has a minimum distance.
+        /// </summary>
+        /// <returns>True if there's a limit, false if not.</returns>
+        public bool HasMinDistance()
+        {
+            return hasMinDistance;
+        }
+
+
+        /// <summary>
+        /// Determines whether or not the controller has a maximum distance.
+        /// </summary>
+        /// <returns>True if there's a limit, false if not.</returns>
+        public bool HasMaxDistance()
+        {
+            return hasMaxDistance;
+        }
+
+        /// <summary>
+        /// Sets the target position.
+        /// </summary>
+        /// <param name="targetPosition">A float containing the target position. Must be within minimum and maximum distance.</param>
+        public void SetTargetPosition(float position)
+        {
+            newTargetPosition = position;
+
+            //Make sure we're in bounds
+            if (newTargetPosition < minDistance)
+                newTargetPosition = minDistance;
+            else if (newTargetPosition > maxDistance)
+                newTargetPosition = maxDistance;
+
+            //Set target position
+            targetPosition = newTargetPosition;
+            targetPositionText = string.Format("{0:f2}", newTargetPosition);
+
+            //Move to target
+            moveToTarget();
+        }
+
+        /// <summary>
+        /// Sets the velocity of the movement in meters per second.
+        /// </summary>
+        /// <param name="velocity">A float containing the desired velocity in meters per second.</param>
+        public void SetVelocity(float velocity)
+        {
+            velocityMetersPerSec = velocity;
+            velocityPerUpdate = velocityMetersPerSec * TimeWarp.fixedDeltaTime;
         }
         #endregion
 

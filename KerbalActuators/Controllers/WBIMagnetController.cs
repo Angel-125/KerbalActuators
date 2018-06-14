@@ -21,6 +21,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 namespace KerbalActuators
 {
     /// <summary>
+    /// This interface controls the magnet.
+    /// </summary>
+    public interface IMagnetController : IGenericController
+    {
+        /// <summary>
+        /// Sets the state of the magnet
+        /// </summary>
+        /// <param name="isActivated">True if the magnet is on, false if not.</param>
+        void SetMagnetState(bool isActivated);
+    }
+
+    /// <summary>
     /// This class implements a magnet that's used for moving other parts around.
     /// It does so by creating an attachment joint on the detected target.
     /// Whenever the magnet moves around, so to does the target.
@@ -29,7 +41,7 @@ namespace KerbalActuators
     /// touches a target part.
     /// </summary>
     [KSPModule("Magnet")]
-    public class WBIMagnetController : PartModule, IServoController
+    public class WBIMagnetController : PartModule, IServoController, IMagnetController
     {
         #region Constants and user strings
         const int kPanelHeight = 120;
@@ -406,6 +418,27 @@ namespace KerbalActuators
         {
             return groupID;
         }
+        #endregion
+
+        #region IMagnetController
+        /// <summary>
+        /// Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+        /// </summary>
+        /// <returns>True if the controller is active, false if not.</returns>
+        public bool IsActive()
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Sets the state of the magnet
+        /// </summary>
+        /// <param name="isActivated">True if the magnet is on, false if not.</param>
+        public void SetMagnetState(bool isActivated)
+        {
+            magnetActivated = isActivated;
+        }
+
         #endregion
     }
 }

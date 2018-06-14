@@ -30,7 +30,7 @@ namespace KerbalActuators
     /// <summary>
     /// Generic servo controller interface
     /// </summary>
-    public interface IServoController
+    public interface IServoController : IGenericController
     {
         /// <summary>
         /// Specifies the group identifier string for the servo controller. Enables you to have servos in distinct groups like an engine and an arm, on the same part.

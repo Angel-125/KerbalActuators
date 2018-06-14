@@ -22,7 +22,7 @@ namespace KerbalActuators
     /// <summary>
     /// This interface is used by the WBIVTOLManager to control the hover state of an engine.
     /// </summary>
-    public interface IHoverController
+    public interface IHoverController : IGenericController
     {
         /// <summary>
         /// Determines whether or not the engine is active.
@@ -132,6 +132,15 @@ namespace KerbalActuators
         #endregion
 
         #region API
+        /// <summary>
+        /// Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+        /// </summary>
+        /// <returns>True if the controller is active, false if not.</returns>
+        public bool IsActive()
+        {
+            return true;
+        }
+
         /// <summary>
         /// This event toggles the hover mode.
         /// </summary>

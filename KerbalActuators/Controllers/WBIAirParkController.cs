@@ -24,7 +24,7 @@ namespace KerbalActuators
     /// <summary>
     /// This controller interface defines an air park controller. The controller lets you "park" a vessel in mid-air and treat it as if landed on the ground.
     /// </summary>
-    public interface IAirParkController
+    public interface IAirParkController : IGenericController
     {
         /// <summary>
         /// Sets the parking mode.
@@ -179,6 +179,15 @@ namespace KerbalActuators
         #endregion
 
         #region IAirParkController
+        /// <summary>
+        /// Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+        /// </summary>
+        /// <returns>True if the controller is active, false if not.</returns>
+        public bool IsActive()
+        {
+            return true;
+        }
+
         public string GetSituation()
         {
             return this.part.vessel.SituationString;

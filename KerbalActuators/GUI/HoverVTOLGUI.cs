@@ -119,7 +119,7 @@ namespace KerbalActuators
             {
                 for (int index = 0; index < customControllers.Length; index++)
                 {
-                    if (customControllers[index].IsVisible())
+                    if (customControllers[index].IsActive())
                         customControllers[index].DrawCustomController();
                 }
             }

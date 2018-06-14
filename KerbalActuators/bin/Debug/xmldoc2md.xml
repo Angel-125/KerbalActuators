@@ -4,6 +4,18 @@
         <name>KerbalActuators</name>
     </assembly>
     <members>
+        <member name="T:KerbalActuators.IGenericController">
+            <summary>
+            This is the base level controller interface from which all KerbalAcuators controller interfaces derive from. It makes it easier for third party apps to obtain all the controllers that a manager manages.
+            You can use the "is" keyword to query an IGenericController for a specific interface.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.IGenericController.IsActive">
+            <summary>
+            Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+            </summary>
+            <returns>True if the controller is active, false if not.</returns>
+        </member>
         <member name="T:KerbalActuators.WBILightController">
             <summary>
             Derived from the stock ModuleLight, this controller lets you control a light through the Servo Manager.
@@ -141,6 +153,19 @@
             </summary>
             <param name="node">A SERVODAT_NODE ConfigNode containing servo state data.</param>
         </member>
+        <member name="M:KerbalActuators.WBILightController.IsActive">
+            <summary>
+            Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+            </summary>
+            <returns>True if the controller is active, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBILightController.SetupLight(UnityEngine.Color,System.Single)">
+            <summary>
+            Sets up the light color and intensity.
+            </summary>
+            <param name="color">A Color structure containing the light colors.</param>
+            <param name="lightLevel">The intensity level of the lights</param>
+        </member>
         <member name="T:KerbalActuators.IHoverController">
             <summary>
             This interface is used by the WBIVTOLManager to control the hover state of an engine.
@@ -232,6 +257,12 @@
             <summary>
             The current engine to update during hover state updates.
             </summary>
+        </member>
+        <member name="M:KerbalActuators.WBIHoverController.IsActive">
+            <summary>
+            Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+            </summary>
+            <returns>True if the controller is active, false if not.</returns>
         </member>
         <member name="M:KerbalActuators.WBIHoverController.ToggleHoverMode">
             <summary>
@@ -337,6 +368,51 @@
             A HoverUpdateEvent that's fired when the hover state changes.
             </summary>
         </member>
+        <member name="T:KerbalActuators.WBIThrustModes">
+            <summary>
+            This enumerator specifies the thrust modes.
+            </summary>
+        </member>
+        <member name="T:KerbalActuators.IThrustVectorController">
+            <summary>
+            This interface is used by WBIVTOLManager to control the forward, reverse, and VTOL thrust for engines that implement the interface.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.IThrustVectorController.SetForwardThrust(KerbalActuators.WBIVTOLManager)">
+            <summary>
+            Instructs the engine to use forward thrust.
+            </summary>
+            <param name="vtolManager">The WBIVTOLManager that's making the request.</param>
+        </member>
+        <member name="M:KerbalActuators.IThrustVectorController.SetReverseThrust(KerbalActuators.WBIVTOLManager)">
+            <summary>
+            Instructs the engine to use reverse thrust.
+            </summary>
+            <param name="vtolManager">The WBIVTOLManager that's making the request.</param>
+        </member>
+        <member name="M:KerbalActuators.IThrustVectorController.SetVTOLThrust(KerbalActuators.WBIVTOLManager)">
+            <summary>
+            Instructs the engine to use VTOL thrust.
+            </summary>
+            <param name="vtolManager">The WBIVTOLManager that's making the request.</param>
+        </member>
+        <member name="M:KerbalActuators.IThrustVectorController.GetThrustMode">
+            <summary>
+            Returns the current thrust mode of the engine.
+            </summary>
+            <returns>A WBIThrustModes enumerator specifying the current thrust mode.</returns>
+        </member>
+        <member name="T:KerbalActuators.ICustomController">
+            <summary>
+            The custom controller interface is used by both the WBIVTOLManager and WBIServoManager to display controls.
+            Unlike other interfaces, the managers rely upon the implementor to draw the GUI controls.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.ICustomController.DrawCustomController">
+            <summary>
+            Instructs the implementor to draw its GUI controls.
+            </summary>
+        </member>
         <member name="T:KerbalActuators.IAirParkController">
             <summary>
             This controller interface defines an air park controller. The controller lets you "park" a vessel in mid-air and treat it as if landed on the ground.
@@ -421,6 +497,12 @@
             Attemps to kill the vessel velocity. Best used when under 100m/sec.
             </summary>
         </member>
+        <member name="M:KerbalActuators.WBIAirParkController.IsActive">
+            <summary>
+            Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+            </summary>
+            <returns>True if the controller is active, false if not.</returns>
+        </member>
         <member name="F:KerbalActuators.WBICameraController.guiVisible">
             <summary>
             Sets the visibility state of the Part Action Window controls.
@@ -435,6 +517,77 @@
             <summary>
             Name of the camera. Makes it easy to identify in a Sequence.
             </summary>
+        </member>
+        <member name="M:KerbalActuators.WBIVTOLManager.GetAllControllers">
+            <summary>
+            Returns an array of IGenericController interfaces if there are any. IGenericController is the base interface for controllers like IHoverController and IRotationController.
+            </summary>
+            <returns>An array containing IGenericController interfaces if there are any controllers, or null if there are none.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIVTOLManager.AirParkControllerActive">
+            <summary>
+            Determines whether or not the air park controller is active.
+            </summary>
+            <returns>True if active, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIVTOLManager.GetAirParkController">
+            <summary>
+            Returns the Air Park controller, if any.
+            </summary>
+            <returns>An IAirParkController interface if the vessel has an air park controller, or null if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIVTOLManager.HasRotationControllers">
+            <summary>
+            Determines whether or not the vessel has rotation controllers.
+            </summary>
+            <returns>True if there are rotation controllers, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIVTOLManager.GetRotationControllers">
+            <summary>
+            Returns the rotation controllers, if any.
+            </summary>
+            <returns>An array of IRotationController interfaces if the vessel has rotation controllers, or null if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIVTOLManager.HoverControllerActive">
+            <summary>
+            Determines whether or not the hover controller is active.
+            </summary>
+            <returns>True if active, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIVTOLManager.GetHoverControllers">
+            <summary>
+            Returns the hover controllers, if any.
+            </summary>
+            <returns>An array of IHoverController interfaces if the vessel has hover controllers, or null if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIVTOLManager.ThrustVectorControllerActive">
+            <summary>
+            Determines whether or not the thrust vector controller is active.
+            </summary>
+            <returns>True if active, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIVTOLManager.GetThrustVectorControllers">
+            <summary>
+            Returns the thrust vector controllers, if any.
+            </summary>
+            <returns>An array of IThrustVectorController interfaces if the vessel has thrust vector controllers, or null if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIVTOLManager.GetCustomControllers">
+            <summary>
+            Returns the custom controllers, if any.
+            </summary>
+            <returns>An array of ICustomController interfaces if the vessel has custom controllers, or null if not.</returns>
+        </member>
+        <member name="T:KerbalActuators.IMagnetController">
+            <summary>
+            This interface controls the magnet.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.IMagnetController.SetMagnetState(System.Boolean)">
+            <summary>
+            Sets the state of the magnet
+            </summary>
+            <param name="isActivated">True if the magnet is on, false if not.</param>
         </member>
         <member name="T:KerbalActuators.WBIMagnetController">
             <summary>
@@ -566,6 +719,18 @@
             </summary>
             <returns>A string containing the group ID</returns>
         </member>
+        <member name="M:KerbalActuators.WBIMagnetController.IsActive">
+            <summary>
+            Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+            </summary>
+            <returns>True if the controller is active, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIMagnetController.SetMagnetState(System.Boolean)">
+            <summary>
+            Sets the state of the magnet
+            </summary>
+            <param name="isActivated">True if the magnet is on, false if not.</param>
+        </member>
         <member name="T:KerbalActuators.WBIMovementState">
             <summary>
             This enum describes the current state of the translation controller.
@@ -585,6 +750,50 @@
             <summary>
             Controller is moving backward. "Backward" is relative to the axis of movement.
             </summary>
+        </member>
+        <member name="T:KerbalActuators.ITranslationController">
+            <summary>
+            This controller handles translation of the object's mesh.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.ITranslationController.MoveToMin">
+            <summary>
+            Moves to the minimum position.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.ITranslationController.MoveToMax">
+            <summary>
+            Moves to the maxiumum position.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.ITranslationController.MoveToNeutral">
+            <summary>
+            Moves to the neutral position.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.ITranslationController.HasMinDistance">
+            <summary>
+            Determines whether or not the controller has a minimum distance.
+            </summary>
+            <returns>True if there's a limit, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.ITranslationController.HasMaxDistance">
+            <summary>
+            Determines whether or not the controller has a maximum distance.
+            </summary>
+            <returns>True if there's a limit, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.ITranslationController.SetTargetPosition(System.Single)">
+            <summary>
+            Sets the target position.
+            </summary>
+            <param name="targetPosition">A float containing the target position. Must be within minimum and maximum distance.</param>
+        </member>
+        <member name="M:KerbalActuators.ITranslationController.SetVelocity(System.Single)">
+            <summary>
+            Sets the velocity of the movement in meters per second.
+            </summary>
+            <param name="velocity">A float containing the desired velocity in meters per second.</param>
         </member>
         <member name="T:KerbalActuators.WBITranslationController">
             <summary>
@@ -711,6 +920,51 @@
             <summary>
             Tells the servo to stop moving.
             </summary>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.IsActive">
+            <summary>
+            Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+            </summary>
+            <returns>True if the controller is active, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.MoveToMin">
+            <summary>
+            Moves to the minimum position.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.MoveToMax">
+            <summary>
+            Moves to the maxiumum position.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.MoveToNeutral">
+            <summary>
+            Moves to the neutral position.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.HasMinDistance">
+            <summary>
+            Determines whether or not the controller has a minimum distance.
+            </summary>
+            <returns>True if there's a limit, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.HasMaxDistance">
+            <summary>
+            Determines whether or not the controller has a maximum distance.
+            </summary>
+            <returns>True if there's a limit, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.SetTargetPosition(System.Single)">
+            <summary>
+            Sets the target position.
+            </summary>
+            <param name="targetPosition">A float containing the target position. Must be within minimum and maximum distance.</param>
+        </member>
+        <member name="M:KerbalActuators.WBITranslationController.SetVelocity(System.Single)">
+            <summary>
+            Sets the velocity of the movement in meters per second.
+            </summary>
+            <param name="velocity">A float containing the desired velocity in meters per second.</param>
         </member>
         <member name="T:KerbalActuators.IPropSpinner">
             <summary>
@@ -1081,6 +1335,24 @@
             </summary>
             <param name="applyToCounterparts">True if the rotator should also rotate its counterparts.</param>
         </member>
+        <member name="M:KerbalActuators.IRotationController.GetMinRotation">
+            <summary>
+            Returns the minimum allowed rotation.
+            </summary>
+            <returns>A float containing the minimum allowed rotation, in degrees. A value of -1.0 indicates that there is no minimum rotation angle.</returns>
+        </member>
+        <member name="M:KerbalActuators.IRotationController.GetMaxRotation">
+            <summary>
+            Returns the minimum allowed rotation.
+            </summary>
+            <returns>A float containing the minimum allowed rotation, in degrees. A value of -1.0 indicates that there is no minimum rotation angle.</returns>
+        </member>
+        <member name="M:KerbalActuators.IRotationController.GetCurrentRotation">
+            <summary>
+            Returns the current rotation.
+            </summary>
+            <returns>A float containing the current rotation, in degrees.</returns>
+        </member>
         <member name="T:KerbalActuators.WBIRotationController">
             <summary>
             The WBIRotationController handles the rotation of mesh transforms under its control. It is useful for
@@ -1202,6 +1474,30 @@
             <summary>
             Name of the effect to play while a servo controller is running. Uses the standard EFFECTS node found in the part config.
             </summary>
+        </member>
+        <member name="M:KerbalActuators.WBIRotationController.IsActive">
+            <summary>
+            Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+            </summary>
+            <returns>True if the controller is active, false if not.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIRotationController.GetMinRotation">
+            <summary>
+            Returns the minimum allowed rotation.
+            </summary>
+            <returns>A float containing the minimum allowed rotation, in degrees. A value of -1.0 indicates that there is no minimum rotation angle.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIRotationController.GetMaxRotation">
+            <summary>
+            Returns the minimum allowed rotation.
+            </summary>
+            <returns>A float containing the minimum allowed rotation, in degrees. A value of -1.0 indicates that there is no minimum rotation angle.</returns>
+        </member>
+        <member name="M:KerbalActuators.WBIRotationController.GetCurrentRotation">
+            <summary>
+            Returns the current rotation.
+            </summary>
+            <returns>A float containing the current rotation, in degrees.</returns>
         </member>
         <member name="M:KerbalActuators.WBIRotationController.MirrorRotation">
             <summary>

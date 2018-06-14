@@ -105,6 +105,24 @@ namespace KerbalActuators
         /// </summary>
         /// <param name="applyToCounterparts">True if the rotator should also rotate its counterparts.</param>
         void RotateMax(bool applyToCounterparts = true);
+
+        /// <summary>
+        /// Returns the minimum allowed rotation.
+        /// </summary>
+        /// <returns>A float containing the minimum allowed rotation, in degrees. A value of -1.0 indicates that there is no minimum rotation angle.</returns>
+        float GetMinRotation();
+
+        /// <summary>
+        /// Returns the minimum allowed rotation.
+        /// </summary>
+        /// <returns>A float containing the minimum allowed rotation, in degrees. A value of -1.0 indicates that there is no minimum rotation angle.</returns>
+        float GetMaxRotation();
+
+        /// <summary>
+        /// Returns the current rotation.
+        /// </summary>
+        /// <returns>A float containing the current rotation, in degrees.</returns>
+        float GetCurrentRotation();
     }
     #endregion
 
@@ -278,6 +296,49 @@ namespace KerbalActuators
         #endregion
 
         #region API
+        /// <summary>
+        /// Determines whether or not the controller is active. For instance, you might only have the first controller on a vessel set to active while the rest are inactive.
+        /// </summary>
+        /// <returns>True if the controller is active, false if not.</returns>
+        public bool IsActive()
+        {
+            ModuleEngines engine = this.part.FindModuleImplementing<ModuleEngines>();
+            if (engine == null)
+                return true;
+
+            else if (engine.EngineIgnited && engine.isOperational)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the minimum allowed rotation.
+        /// </summary>
+        /// <returns>A float containing the minimum allowed rotation, in degrees. A value of -1.0 indicates that there is no minimum rotation angle.</returns>
+        public float GetMinRotation()
+        {
+            return minRotateAngle;
+        }
+
+        /// <summary>
+        /// Returns the minimum allowed rotation.
+        /// </summary>
+        /// <returns>A float containing the minimum allowed rotation, in degrees. A value of -1.0 indicates that there is no minimum rotation angle.</returns>
+        public float GetMaxRotation()
+        {
+            return maxRotateAngle;
+        }
+
+        /// <summary>
+        /// Returns the current rotation.
+        /// </summary>
+        /// <returns>A float containing the current rotation, in degrees.</returns>
+        public float GetCurrentRotation()
+        {
+            return currentRotationAngle;
+        }
+
         /// <summary>
         /// Tells the rotator to mirror its rotation. This is helpful when making, say, a tilt-rotor engine, and making sure that each nacelle rotates in the proper direction.
         /// </summary>
