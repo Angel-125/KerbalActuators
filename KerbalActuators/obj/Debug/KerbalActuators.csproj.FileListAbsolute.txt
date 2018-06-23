@@ -3,6 +3,7 @@ C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\xml
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\RunMDSeparator.bat
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\RunPowershell.bat
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\xmldoc2md.ps1
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\xmldoc2md.xml
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\KerbalActuators.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\KerbalActuators.pdb
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Assembly-CSharp-firstpass.dll
@@ -12,9 +13,10 @@ C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Uni
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\UnityEngine.UI.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\KSPTrackIR.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Mono.Cecil.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Ionic.Zip.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\TDx.TDxInput.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.csproj.CoreCompileInputs.cache
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.csproj.CopyComplete
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.pdb
-C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.csprojResolveAssemblyReference.cache
-C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Ionic.Zip.dll
-C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\RedShellSDK.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.csprojAssemblyReference.cache

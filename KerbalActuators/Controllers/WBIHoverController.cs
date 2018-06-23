@@ -65,6 +65,12 @@ namespace KerbalActuators
         void SetVerticalSpeed(float verticalSpeed);
 
         /// <summary>
+        /// Returns the current vertical speed of the hover controller, in meters/sec.
+        /// </summary>
+        /// <returns>A float containing the current vertical speed in meters/sec.</returns>
+        float GetVerticalSpeed();
+
+        /// <summary>
         /// Tells the hover controller to that the craft should be at 0 vertical speed.
         /// </summary>
         void KillVerticalSpeed();
@@ -328,6 +334,15 @@ namespace KerbalActuators
 
             if (onHoverUpdate != null)
                 onHoverUpdate(hoverActive, verticalSpeed);
+        }
+
+        /// <summary>
+        /// Returns the current vertical speed of the hover controller, in meters/sec.
+        /// </summary>
+        /// <returns>A float containing the current vertical speed in meters/sec.</returns>
+        public float GetVerticalSpeed()
+        {
+            return verticalSpeed;
         }
 
         /// <summary>
