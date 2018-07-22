@@ -439,6 +439,23 @@ namespace KerbalActuators
             magnetActivated = isActivated;
         }
 
+        /// <summary>
+        /// TUrns the magnet on.
+        /// </summary>
+        [KSPEvent()]
+        public void ActivateMagnet()
+        {
+            magnetActivated = true;
+        }
+
+        /// <summary>
+        /// Turns off the magnet.
+        /// </summary>
+        [KSPEvent()]
+        public void DeactivateMagnet()
+        {
+            magnetActivated = false;
+        }
         #endregion
     }
 }

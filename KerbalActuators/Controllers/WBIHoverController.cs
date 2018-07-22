@@ -65,6 +65,12 @@ namespace KerbalActuators
         void SetVerticalSpeed(float verticalSpeed);
 
         /// <summary>
+        /// Returns the current vertical speed of the hover controller, in meters/sec.
+        /// </summary>
+        /// <returns>A float containing the current vertical speed in meters/sec.</returns>
+        float GetVerticalSpeed();
+
+        /// <summary>
         /// Tells the hover controller to that the craft should be at 0 vertical speed.
         /// </summary>
         void KillVerticalSpeed();
@@ -177,6 +183,7 @@ namespace KerbalActuators
         /// Determines whether or not the hover is active
         /// </summary>
         /// <returns>True if active, false if not</returns>
+        [KSPEvent()]
         public virtual bool GetHoverState()
         {
             return hoverActive;
@@ -186,6 +193,7 @@ namespace KerbalActuators
         /// Determines whether or not the engine is active.
         /// </summary>
         /// <returns>True if the engine is active, false if not.</returns>
+        [KSPEvent()]
         public virtual bool IsEngineActive()
         {
             getCurrentEngine();
@@ -198,6 +206,7 @@ namespace KerbalActuators
         /// <summary>
         /// Tells the controller to start the engine.
         /// </summary>
+        [KSPEvent()]
         public virtual void StartEngine()
         {
             getCurrentEngine();
@@ -210,6 +219,7 @@ namespace KerbalActuators
         /// <summary>
         /// Tells the hover controller to stop the engine.
         /// </summary>
+        [KSPEvent()]
         public virtual void StopEngine()
         {
             getCurrentEngine();
@@ -331,8 +341,19 @@ namespace KerbalActuators
         }
 
         /// <summary>
+        /// Returns the current vertical speed of the hover controller, in meters/sec.
+        /// </summary>
+        /// <returns>A float containing the current vertical speed in meters/sec.</returns>
+        [KSPEvent()]
+        public float GetVerticalSpeed()
+        {
+            return verticalSpeed;
+        }
+
+        /// <summary>
         /// Sets the desired vertical speed to 0.
         /// </summary>
+        [KSPEvent()]
         public virtual void KillVerticalSpeed()
         {
             verticalSpeed = 0f;
@@ -379,6 +400,7 @@ namespace KerbalActuators
         /// <summary>
         /// Activates hover mode.
         /// </summary>
+        [KSPEvent()]
         public virtual void ActivateHover()
         {
             hoverActive = true;
@@ -400,6 +422,7 @@ namespace KerbalActuators
         /// <summary>
         /// Deactivates hover mode.
         /// </summary>
+        [KSPEvent()]
         public virtual void DeactivateHover()
         {
             hoverActive = false;
