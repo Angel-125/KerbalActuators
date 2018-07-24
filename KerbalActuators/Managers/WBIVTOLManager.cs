@@ -186,6 +186,8 @@ namespace KerbalActuators
 
         public void FixedUpdate()
         {
+            if (!HighLogic.LoadedSceneIsFlight)
+                return;
             if (hoverControllers == null)
                 return;
             if (hoverControllers.Length == 0)

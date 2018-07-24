@@ -189,6 +189,13 @@ namespace KerbalActuators
         /// </summary>
         [KSPField]
         public float neutralSpinRate = 10.0f;
+
+        /// <summary>
+        /// Flag to indicate whether or not to rotate the propeller(s) back to their neutral position after they stop.
+        /// Default is true.
+        /// </summary>
+        [KSPField]
+        public bool restoreToNeutralRotation = true;
         #endregion
 
         #region Housekeeping
@@ -526,6 +533,11 @@ namespace KerbalActuators
                 {
                     //Calcualte direction
                     case ERotationStates.SlowingDown:
+                        if (!restoreToNeutralRotation)
+                        {
+                            rotationState = ERotationStates.Locked;
+                            return;
+                        }
                         degPerUpdate = neutralSpinRate * TimeWarp.fixedDeltaTime;
                         if ((0f - currentRotationAngle + 360f) % 360f <= 180f)
                             rotationState = ERotationStates.RotatingUp;
@@ -561,9 +573,9 @@ namespace KerbalActuators
 
                     //Rotate the mesh
                     if (!mirrorRotation)
-                        rotorTransform.transform.localEulerAngles = (rotationAxis * currentRotationAngle);
+                        rotorTransform.localEulerAngles = (rotationAxis * currentRotationAngle);
                     else
-                        rotorTransform.transform.localEulerAngles = (rotationAxis * -currentRotationAngle);
+                        rotorTransform.localEulerAngles = (rotationAxis * -currentRotationAngle);
                 }
 
                 return;

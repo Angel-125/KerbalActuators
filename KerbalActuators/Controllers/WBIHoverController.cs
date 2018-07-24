@@ -183,7 +183,6 @@ namespace KerbalActuators
         /// Determines whether or not the hover is active
         /// </summary>
         /// <returns>True if active, false if not</returns>
-        [KSPEvent()]
         public virtual bool GetHoverState()
         {
             return hoverActive;
@@ -193,7 +192,6 @@ namespace KerbalActuators
         /// Determines whether or not the engine is active.
         /// </summary>
         /// <returns>True if the engine is active, false if not.</returns>
-        [KSPEvent()]
         public virtual bool IsEngineActive()
         {
             getCurrentEngine();
@@ -344,7 +342,6 @@ namespace KerbalActuators
         /// Returns the current vertical speed of the hover controller, in meters/sec.
         /// </summary>
         /// <returns>A float containing the current vertical speed in meters/sec.</returns>
-        [KSPEvent()]
         public float GetVerticalSpeed()
         {
             return verticalSpeed;

@@ -581,6 +581,12 @@
             During the shutdown process, how fast, in degrees/sec, do the rotors rotate to neutral?
             </summary>
         </member>
+        <member name="F:KerbalActuators.WBIPropSpinner.restoreToNeutralRotation">
+            <summary>
+            Flag to indicate whether or not to rotate the propeller(s) back to their neutral position after they stop.
+            Default is true.
+            </summary>
+        </member>
         <member name="M:KerbalActuators.WBIPropSpinner.MirrorRotation(System.Boolean)">
             <summary>
             Sets mirrored rotation.
