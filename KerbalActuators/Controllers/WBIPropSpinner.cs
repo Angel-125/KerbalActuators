@@ -196,6 +196,20 @@ namespace KerbalActuators
         /// </summary>
         [KSPField]
         public bool restoreToNeutralRotation = true;
+
+        /// <summary>
+        /// Indicates whether or not turning on/off RCS will start/stop the rotors. This only applies if the part has no engine part module.
+        /// Default is false.
+        /// </summary>
+        [KSPField]
+        public bool enabledByRCS = false;
+
+        /// <summary>
+        /// When the spinner is controlled by RCS, the throttle controls spin rate.
+        /// This field specifies at which level of throttle to blur the rotors.
+        /// </summary>
+        [KSPField]
+        public float minThrottleBlur = 20.0f;
         #endregion
 
         #region Housekeeping
@@ -221,18 +235,18 @@ namespace KerbalActuators
         #region Overrides
         public void FixedUpdate()
         {
-            if (engine == null || rotorTransform == null)
+            if (rotorTransform == null)
                 return;
             if (HighLogic.LoadedSceneIsFlight == false)
                 return;
 
-            //If the engine isn't running, then slow and stop the rotors.
-            if (!engineIsRunning())
-                rotatePropellersShutdown();
-
-            //If the rotor is deployed, and the engine is running, then rotate the rotors.
-            else
+            //Spin the rotors if the engine/RCS is running
+            if (engineIsRunning())
                 rotatePropellersRunning();
+
+            //Shut down the rotors if the engine isn't running.
+            else
+                rotatePropellersShutdown();
         }
 
         public override void OnLoad(ConfigNode node)
@@ -285,35 +299,38 @@ namespace KerbalActuators
             SetGUIVisible(guiVisible);
 
             //Setup actions
-            if (!actionsVisible)
+            if (!actionsVisible || engine == null)
             {
                 Actions["ToggleThrustTransformAction"].actionGroup = KSPActionGroup.None;
                 Actions["ToggleThrustTransformAction"].active = false;
             }
 
             //Setup the thrust transform
-            if (canReverseThrust)
+            if (engine != null)
             {
-                fwdThrustTransform = this.part.FindModelTransform(thrustTransform);
-                revThrustTransform = this.part.FindModelTransform(reverseThrustTransform);
-
-                if (fwdThrustTransform != null && revThrustTransform != null)
+                if (canReverseThrust)
                 {
-                    SetupThrustTransform();
-                    SetupAnimation();
-                }
+                    fwdThrustTransform = this.part.FindModelTransform(thrustTransform);
+                    revThrustTransform = this.part.FindModelTransform(reverseThrustTransform);
 
+                    if (fwdThrustTransform != null && revThrustTransform != null)
+                    {
+                        SetupThrustTransform();
+                        SetupAnimation();
+                    }
+
+                    else
+                    {
+                        Actions["ToggleThrustTransformAction"].actionGroup = KSPActionGroup.None;
+                        Events["ToggleThrustTransform"].active = false;
+                        Actions["ToggleThrustTransformAction"].active = false;
+                    }
+                }
                 else
                 {
-                    Actions["ToggleThrustTransformAction"].actionGroup = KSPActionGroup.None;
-                    Events["ToggleThrustTransform"].active = false;
-                    Actions["ToggleThrustTransformAction"].active = false;
+                    fwdThrustTransform = this.part.FindModelTransform(thrustTransform);
+                    revThrustTransform = fwdThrustTransform;
                 }
-            }
-            else
-            {
-                fwdThrustTransform = this.part.FindModelTransform(thrustTransform);
-                revThrustTransform = fwdThrustTransform;
             }
 
             //Rotor transforms
@@ -348,6 +365,9 @@ namespace KerbalActuators
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Thrust: Forward")]
         public void ToggleThrustTransform()
         {
+            if (engine == null)
+                return;
+
             reverseThrust = !reverseThrust;
             SetReverseThrust(reverseThrust);
 
@@ -372,6 +392,9 @@ namespace KerbalActuators
         /// <param name="isReverseThrust">True if the thrust is reversed, false if not.</param>
         public virtual void SetReverseThrust(bool isReverseThrust)
         {
+            if (engine == null)
+                return;
+
             reverseThrust = isReverseThrust;
             SetupThrustTransform();
             HandleReverseThrustAnimation();
@@ -396,6 +419,9 @@ namespace KerbalActuators
         /// </summary>
         public virtual void ToggleThrust()
         {
+            if (engine == null)
+                return;
+
             reverseThrust = !reverseThrust;
             SetupThrustTransform();
             HandleReverseThrustAnimation();
@@ -415,6 +441,9 @@ namespace KerbalActuators
         /// </summary>
         public void SetupThrustTransform()
         {
+            if (engine == null)
+                return;
+
             //We have separate forward and reverse thrust transforms. Switch them out.
             engine.thrustTransforms.Clear();
             if (reverseThrust)
@@ -502,6 +531,15 @@ namespace KerbalActuators
 
         protected bool engineIsRunning()
         {
+            //Check RCS state if needed
+            if (engine == null)
+            {
+                if (!enabledByRCS)
+                    return false;
+
+                return FlightGlobals.ActiveVessel.ActionGroups[KSPActionGroup.RCS];
+            }
+
             //If we have multiple engines, make sure we have the current one.
             if (engineSwitcher != null)
             {
@@ -607,18 +645,39 @@ namespace KerbalActuators
             rotorTransform.Rotate(rotationAxis * rotationPerFrame);
         }
 
+        protected float getThrustThrottleRatio()
+        {
+            if (engine != null)
+            {
+                return engine.finalThrust / engine.maxThrust;
+            }
+
+            else if (enabledByRCS && FlightGlobals.ActiveVessel.ActionGroups[KSPActionGroup.RCS])
+            {
+                return FlightInputHandler.state.mainThrottle;
+            }
+
+            else
+            {
+                return 0f;
+            }
+        }
+
         protected void rotatePropellersRunning()
         {
             rotationState = ERotationStates.Spinning;
-            float minThrustRatio = minThrustRotorBlur / 100.0f;
+            float minRatio = minThrustRotorBlur / 100.0f;
+            if (enabledByRCS)
+                minRatio = minThrottleBlur / 100.0f;
 
-            //If the engine thrust is >= 25% then show the blurred rotors
-            float thrustRatio = engine.finalThrust / engine.maxThrust;
-            if (thrustRatio >= minThrustRatio || (isBlurred && isHovering))
+            //If the thrust/throttle ratio is >= minimum ratio then show the blurred rotors
+            float thrustThrottleRatio = getThrustThrottleRatio();
+            if (thrustThrottleRatio >= minRatio || (isBlurred && isHovering))
             {
                 if (!isBlurred)
                 {
                     isBlurred = true;
+                    currentSpoolRate = 1.0f;
                     setupRotorTransforms();
                 }
 
@@ -641,7 +700,7 @@ namespace KerbalActuators
                 blurredRotorTransform.Rotate(rotationAxis * rotationPerFrame);
             }
 
-            //Rotate the non-blurred rotor until thrust % >= minThrustRotorBlur
+            //Rotate the non-blurred rotor until thrust/throttle ratio >= minRatio
             else
             {
                 if (isBlurred)
@@ -659,7 +718,6 @@ namespace KerbalActuators
                 currentRotationAngle = currentRotationAngle % 360.0f;
                 if (mirrorRotation)
                     rotationPerFrame *= -1.0f;
-
 
                 if (reverseThrust)
                     rotationPerFrame *= -1.0f;

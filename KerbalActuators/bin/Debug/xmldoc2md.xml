@@ -587,6 +587,18 @@
             Default is true.
             </summary>
         </member>
+        <member name="F:KerbalActuators.WBIPropSpinner.enabledByRCS">
+            <summary>
+            Indicates whether or not turning on/off RCS will start/stop the rotors. This only applies if the part has no engine part module.
+            Default is false.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBIPropSpinner.minThrottleBlur">
+            <summary>
+            When the spinner is controlled by RCS, the throttle controls spin rate.
+            This field specifies at which level of throttle to blur the rotors.
+            </summary>
+        </member>
         <member name="M:KerbalActuators.WBIPropSpinner.MirrorRotation(System.Boolean)">
             <summary>
             Sets mirrored rotation.
