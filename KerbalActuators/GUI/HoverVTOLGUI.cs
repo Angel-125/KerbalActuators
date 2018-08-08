@@ -43,8 +43,10 @@ namespace KerbalActuators
         GUIStyle goodTextStyle;
         GUIStyle textFieldStyle;
         bool isParked = false;
+        Vector2 scrollPos;
+        GUILayoutOption[] scrollViewOptions = new GUILayoutOption[] { GUILayout.Height(350) };
 
-        public HoverVTOLGUI(string title = "VTOL Manager", int height = 15, int width = 310) :
+        public HoverVTOLGUI(string title = "Flight Operations", int height = 350, int width = 310) :
         base(title, width, height)
         {
             string baseIconURL = "WildBlueIndustries/001KerbalActuators/Icons/";
@@ -93,6 +95,7 @@ namespace KerbalActuators
 
             textFieldStyle = goodTextStyle;
 
+            scrollPos = GUILayout.BeginScrollView(scrollPos, scrollViewOptions);
             drawHeaderControls();
 
             if (canDrawParkingControls)
@@ -123,6 +126,7 @@ namespace KerbalActuators
                         customControllers[index].DrawCustomController();
                 }
             }
+            GUILayout.EndScrollView();
         }
 
         protected void drawThrustControls()

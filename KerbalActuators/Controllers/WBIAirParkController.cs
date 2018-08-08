@@ -60,7 +60,7 @@ namespace KerbalActuators
         public const int kGForceFrameIgnore = 240;
         public const string kParkGuiName = "Enable Airpark";
         public const string kUnparkGuiName = "Disable Airpark";
-        const bool kDebugMode = true;
+        const bool kDebugMode = false;
         #endregion
 
         #region Fields
