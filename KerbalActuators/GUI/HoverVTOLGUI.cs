@@ -126,6 +126,24 @@ namespace KerbalActuators
                         customControllers[index].DrawCustomController();
                 }
             }
+
+            //Custom draw controllers setup via reflection
+            try
+            {
+                int count = WBIVTOLManager.Instance.drawControllers.Count;
+                WBICustomDrawController drawController;
+                for (int index = 0; index < count; index++)
+                {
+                    drawController = WBIVTOLManager.Instance.drawControllers[index];
+
+                    drawController.partModule.Events[drawController.methodName].Invoke();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Error while trying to invoke a custom draw controller method: " + ex.ToString());
+            }
+
             GUILayout.EndScrollView();
         }
 

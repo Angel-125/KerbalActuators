@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using KSP.IO;
+using System.Reflection;
 
 /*
 Source code copyrighgt 2017, by Michael Billard (Angel-125)
@@ -19,6 +20,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 */
 namespace KerbalActuators
 {
+    public delegate void DrawControllerDelegate();
+
+    public struct WBICustomDrawController
+    {
+        public PartModule partModule;
+        public string methodName;
+    }
+
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class WBIVTOLManager : MonoBehaviour
     {
@@ -29,6 +38,7 @@ namespace KerbalActuators
         public const string LABEL_VSPDDEC = "VSPD -";
 
         public static WBIVTOLManager Instance;
+        public List<WBICustomDrawController> drawControllers = new List<WBICustomDrawController>();
 
         public KeyCode codeToggleHover = KeyCode.Insert;
         public KeyCode codeIncreaseVSpeed = KeyCode.PageUp;
@@ -51,6 +61,44 @@ namespace KerbalActuators
         private string hoverControlsPath;
 
         #region API
+        public static void AddCustomDrawController(PartModule module, string methodName)
+        {
+            if (!CustomDrawControllerExists(module))
+            {
+                WBICustomDrawController controller = new WBICustomDrawController();
+                controller.partModule = module;
+                controller.methodName = methodName;
+
+                Instance.drawControllers.Add(controller);
+            }
+        }
+
+        public static void RemoveCustomDrawController(PartModule module)
+        {
+            int count = Instance.drawControllers.Count;
+            WBICustomDrawController[] controllers = Instance.drawControllers.ToArray();
+            for (int index = 0; index < count; index++)
+            {
+                if (controllers[index].partModule == module)
+                {
+                    Instance.drawControllers.Remove(controllers[index]);
+                    return;
+                }
+            }
+        }
+
+        public static bool CustomDrawControllerExists(PartModule module)
+        {
+            int count = Instance.drawControllers.Count;
+            for (int index = 0; index < count; index++)
+            {
+                if (Instance.drawControllers[index].partModule == module)
+                    return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Returns an array of IGenericController interfaces if there are any. IGenericController is the base interface for controllers like IHoverController and IRotationController.
         /// </summary>
