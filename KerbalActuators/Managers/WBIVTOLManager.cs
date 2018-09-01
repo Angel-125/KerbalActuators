@@ -170,7 +170,6 @@ namespace KerbalActuators
             this.vessel = FlightGlobals.ActiveVessel;
 
             //Get the current control code mappings
-            hoverControlsPath = AssemblyLoader.loadedAssemblies.GetPathByType(typeof(WBIVTOLManager)) + "/VTOLControls.cfg";
             LoadControls();
         }
 
@@ -707,11 +706,10 @@ namespace KerbalActuators
 
         public void LoadControls()
         {
-            ConfigNode nodeControls = null;
+            ConfigNode nodeControls = GameDatabase.Instance.GetConfigNode("VTOLCONTROLS");
             KeyCode keyCode;
 
             //Now load the controls
-            nodeControls = ConfigNode.Load(hoverControlsPath);
             if (nodeControls != null)
             {
                 if (nodeControls.HasValue(LABEL_HOVER))

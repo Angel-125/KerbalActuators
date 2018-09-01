@@ -46,7 +46,7 @@ namespace KerbalActuators
         Vector2 scrollPos;
         GUILayoutOption[] scrollViewOptions = new GUILayoutOption[] { GUILayout.Height(350) };
 
-        public HoverVTOLGUI(string title = "Flight Operations", int height = 350, int width = 310) :
+        public HoverVTOLGUI(string title = "Flight Operations", int height = 350, int width = 350) :
         base(title, width, height)
         {
             string baseIconURL = "WildBlueIndustries/001KerbalActuators/Icons/";
