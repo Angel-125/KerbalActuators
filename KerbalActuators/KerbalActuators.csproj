@@ -111,7 +111,13 @@
 xcopy /Y "$(TargetPath)" "C:\KSPDev\GameData\WildBlueIndustries\001KerbalActuators\Plugins\"﻿
 xcopy /Y "$(TargetDir)$(TargetName).pdb" "C:\KSPDev\GameData\WildBlueIndustries\001KerbalActuators\Plugins\"
 xcopy /Y "$(TargetDir)$(TargetName).dll.mdb" "C:\KSPDev\GameData\WildBlueIndustries\001KerbalActuators\Plugins\"
-xcopy /Y "$(TargetDir)$(TargetName).dll" "C:\KSPDev\GameData\WildBlueIndustries\001KerbalActuators\Plugins\"</PostBuildEvent>
+xcopy /Y "$(TargetDir)$(TargetName).dll" "C:\KSPDev\GameData\WildBlueIndustries\001KerbalActuators\Plugins\"
+
+xcopy /Y  "C:\KSPDev\GameData\WildBlueIndustries\001KerbalActuators\*.*" "C:\Projects\KSP\WildBlueIndustries\KerbalActuators\GameData\WildBlueIndustries\001KerbalActuators\"
+xcopy /Y  "C:\KSPDev\GameData\WildBlueIndustries\001KerbalActuators\KerbalActuators.version" "C:\Projects\KSP\WildBlueIndustries\KerbalActuators\Notes\"
+
+del "C:\Projects\KSP\WildBlueIndustries\KerbalActuators\GameData\WildBlueIndustries\001KerbalActuators\MiniAVC.xml"
+</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
