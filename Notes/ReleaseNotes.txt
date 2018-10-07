@@ -1,0 +1,1 @@
+- WBIHoverController now handles hover state updates instead of WBIVTOLManager. This allows multiple craft within physics range of each other to independently hover.

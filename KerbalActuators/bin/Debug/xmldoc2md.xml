@@ -245,12 +245,6 @@
             Tells the engine to shut down.
             </summary>
         </member>
-        <member name="M:KerbalActuators.IHoverController.UpdateHoverState(System.Single)">
-            <summary>
-            Updates the hover state with the current throttle value.
-            </summary>
-            <param name="throttleValue">A float containing the throttle value.</param>
-        </member>
         <member name="M:KerbalActuators.IHoverController.GetHoverState">
             <summary>
             Returns the current hover state

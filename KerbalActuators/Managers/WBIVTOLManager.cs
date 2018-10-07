@@ -242,21 +242,11 @@ namespace KerbalActuators
             if (!hoverActive)
                 return;
 
-            //This is crude but effective. What we do is jitter the engine throttle up and down to maintain desired vertical speed.
-            //It tends to vibrate the engines but they're ok. This will have to do until I can figure out the relation between
-            //engine.finalThrust, engine.maxThrust, and the force needed to make the craft hover.
-            float throttleState = 0;
-            if (FlightGlobals.ActiveVessel.verticalSpeed >= verticalSpeed)
-                throttleState = 0f;
-            else
-                throttleState = 1.0f;
-
+            //Check to see if there is any hover controller that is deactivated and if so, toggle our state.
             bool allHoverStatesActive = true;
             for (int index = 0; index < hoverControllers.Length; index++)
-            {
-                hoverControllers[index].UpdateHoverState(throttleState);
                 allHoverStatesActive = hoverControllers[index].GetHoverState();
-            }
+
             if (!allHoverStatesActive)
                 ToggleHover();
         }
@@ -821,11 +811,15 @@ namespace KerbalActuators
 
         public void VesselWasChanged(Vessel vessel)
         {
+            if (vessel != FlightGlobals.ActiveVessel)
+                return;
             FindControllers(vessel);
         }
 
         public void VesselWasLoaded(Vessel vessel)
         {
+            if (vessel != FlightGlobals.ActiveVessel)
+                return;
             FindControllers(vessel);
         }
         #endregion

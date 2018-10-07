@@ -41,12 +41,6 @@ namespace KerbalActuators
         void StopEngine();
 
         /// <summary>
-        /// Updates the hover state with the current throttle value.
-        /// </summary>
-        /// <param name="throttleValue">A float containing the throttle value.</param>
-        void UpdateHoverState(float throttleValue);
-
-        /// <summary>
         /// Returns the current hover state
         /// </summary>
         /// <returns>true if hover is active, false if not.</returns>
@@ -370,6 +364,25 @@ namespace KerbalActuators
 
             //Set gui visible state
             SetGUIVisible(guiVisible);
+        }
+
+        public void FixedUpdate()
+        {
+            if (!HighLogic.LoadedSceneIsFlight)
+                return;
+            if (!hoverActive)
+                return;
+
+            //This is crude but effective. What we do is jitter the engine throttle up and down to maintain desired vertical speed.
+            //It tends to vibrate the engines but they're ok. This will have to do until I can figure out the relation between
+            //engine.finalThrust, engine.maxThrust, and the force needed to make the craft hover.
+            float throttleState = 0;
+            if (FlightGlobals.ActiveVessel.verticalSpeed >= verticalSpeed)
+                throttleState = 0f;
+            else
+                throttleState = 1.0f;
+
+            UpdateHoverState(throttleState);
         }
 
         /// <summary>
