@@ -107,24 +107,26 @@ namespace KerbalActuators
         /// <summary>
         /// This event tells the controller to set the vessel state as landed. It's not perfect, and you have to F5/F9 for it to take effect, but it basically works.
         /// </summary>
-        [KSPEvent(guiActive = true, guiName = "Set Landed")]
+        [KSPEvent(guiActive = true, guiName = "Airpark: Set Landed")]
         public void SetLanded()
         {
             this.part.vessel.Landed = true;
             this.part.vessel.Splashed = false;
             this.part.vessel.situation = Vessel.Situations.LANDED;
             physicsLoaded = true;
+            SetParking(true);
         }
 
         /// <summary>
         /// This event tells the controller to set the vessel state as flying.
         /// </summary>
-        [KSPEvent(guiActive = true, guiName = "Set Flying")]
+        [KSPEvent(guiActive = true, guiName = "Airpark: Set Flying")]
         public void SetFlying()
         {
             this.part.vessel.Landed = false;
             this.part.vessel.situation = Vessel.Situations.FLYING;
             physicsLoaded = false;
+            SetParking(false);
         }
 
         /// <summary>
