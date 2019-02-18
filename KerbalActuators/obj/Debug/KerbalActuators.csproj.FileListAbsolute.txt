@@ -13,9 +13,10 @@ C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Uni
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\UnityEngine.UI.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\KSPTrackIR.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Mono.Cecil.dll
-C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Ionic.Zip.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\TDx.TDxInput.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.csproj.CoreCompileInputs.cache
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.csproj.CopyComplete
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.pdb
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\Ionic.Zip.dll
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.csprojAssemblyReference.cache

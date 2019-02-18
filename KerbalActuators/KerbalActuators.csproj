@@ -85,6 +85,7 @@
     <Compile Include="WBIDockingPivot.cs" />
     <Compile Include="WBIMovableJoint.cs" />
     <Compile Include="Controllers\WBITranslationController.cs" />
+    <Compile Include="Controllers\WBITrackingController.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MarkdownSeparator.exe">
@@ -113,7 +114,6 @@ xcopy /Y "$(TargetDir)$(TargetName).pdb" "C:\KSPDev\GameData\WildBlueIndustries\
 xcopy /Y "$(TargetDir)$(TargetName).dll.mdb" "C:\KSPDev\GameData\WildBlueIndustries\001KerbalActuators\Plugins\"
 xcopy /Y "$(TargetDir)$(TargetName).dll" "C:\KSPDev\GameData\WildBlueIndustries\001KerbalActuators\Plugins\"
 
-xcopy /Y /E  "C:\KSPDev\GameData\WildBlueIndustries\001KerbalActuators\*.*" "C:\Projects\KSP\WildBlueIndustries\KerbalActuators\GameData\WildBlueIndustries\001KerbalActuators\"
 xcopy /Y  "C:\KSPDev\GameData\WildBlueIndustries\001KerbalActuators\KerbalActuators.version" "C:\Projects\KSP\WildBlueIndustries\KerbalActuators\Notes\"
 
 del "C:\Projects\KSP\WildBlueIndustries\KerbalActuators\GameData\WildBlueIndustries\001KerbalActuators\MiniAVC.xml"

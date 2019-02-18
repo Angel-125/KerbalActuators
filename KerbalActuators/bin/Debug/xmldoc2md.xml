@@ -1691,5 +1691,148 @@
             </summary>
             <param name="velocity">A float containing the desired velocity in meters per second.</param>
         </member>
+        <member name="T:KerbalActuators.WBITrackingController">
+            <summary>
+            This class has the ability to track objects in two dimensions. It can track player-selected targets as well as random targets.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.debugEnabled">
+            <summary>
+            Flag to enable/disable debug fields.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.rotationTransformName">
+            <summary>
+            Name of the rotation transform
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.minRotationAngle">
+            <summary>
+            Minimum rotation angle, from 0 to 180. Set to -1 if there is no rotation limit.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.maxRotationAngle">
+            <summary>
+            maximum rotation angle, from 180 to 360. Set to -1 if there is no rotation limit.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.referenceRotationTransformName">
+            <summary>
+            Fixed reference relative to the rotation transform. Make sure z-axis is facing the same direction.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.elevationTransformName">
+            <summary>
+            Name of the elevation transform.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.minElevationAngle">
+            <summary>
+            Minimum elevation angle, from 0 to 180. Set to -1 if there is no elevation limit.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.maxElevationAngle">
+            <summary>
+            Maximum elevation angle, from 180 to 360. Set to -1 if there is no elevation limit.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.referenceElevationTransformName">
+            <summary>
+            Fixed reference relative to the elevation transform. Make sure the z-axis is facing the same direction.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.secondaryTransformName">
+            <summary>
+            Reference transform used to determine if the tracking controller is pointing at a planet. if so, then the target is declared loss of signal.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.targetRotation">
+            <summary>
+            The rotation angle that we want to rotate to.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.targetElevation">
+            <summary>
+            The elevation angle that we want to elevate to.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.currentRotation">
+            <summary>
+            The current angle between rotationTransform and rotationReferenceTransform
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.currentElevation">
+            <summary>
+            The current angle between elevationTransform and elevationReferenceTransform
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.enableTracking">
+            <summary>
+            Flag to indicate whether or not tracking is enabled.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.canTrackRandomObjects">
+            <summary>
+            Flag to indicate whether or not we can track random objects.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.trackRandomObjects">
+            <summary>
+            Flag to indicate whether or not we are currently tracking random objects.
+            If the vessel has one or more tracking controllers and they're all tracking random objects, then the first controller will select the random target and all other
+            controllers will track the same target.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.trackingStatus">
+            <summary>
+            Current tracking status
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.trackingSpeed">
+            <summary>
+            How fast we can move the rotationTransform and elevationTransform.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.upkeepResource">
+            <summary>
+            The resource, if any, that is consumed while tracking is enabled.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.upkeepAmountPerSec">
+            <summary>
+            The amount of resource that is consumed while tracking is enabled.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.losCooldown">
+            <summary>
+            How long to wait in seconds after we have a loss of signal before tracking another random target.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.randomTrackDuration">
+            <summary>
+            How long in seconds to track a random target.
+            </summary>
+        </member>
+        <member name="F:KerbalActuators.WBITrackingController.canTrackPlayerTargets">
+            <summary>
+            Flag to indicate if we can track player-selected targets.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.WBITrackingController.ClearTarget">
+            <summary>
+            Clears the current target and readies the tracking controller to track something else.
+            This event isn't enabled unless the controller can track random targets, and it is currently tracking random targets.
+            </summary>
+        </member>
+        <member name="M:KerbalActuators.WBITrackingController.UpdateTarget">
+            <summary>
+            Forces the controller to pick a target to track. In order of preference:
+            1) A player-selected target.
+            2) A target vessel specified by the targetVessel variable.
+            3) A target celestial body specified by the targetBody variable.
+            4) A random target if trackRandomTargets is set to true.
+            </summary>
+            <returns></returns>
+        </member>
     </members>
 </doc>

@@ -193,6 +193,7 @@ namespace KerbalActuators
 
         public void FixedUpdate()
         {
+            Events["ToggleGUI"].guiActive = true;
             //A sequence consists of a series of snapshots.
             //A snapshot is done when all the contollers are locked.
             //Play each snapshot in succession until we reach the end.

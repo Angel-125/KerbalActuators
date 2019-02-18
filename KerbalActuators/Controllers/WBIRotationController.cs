@@ -285,7 +285,7 @@ namespace KerbalActuators
         #endregion
 
         #region Housekeeping
-        protected Transform rotationTarget = null;
+        public Transform rotationTarget = null;
         protected Vector3 rotationVector;
         protected float degPerUpdate;
         protected string targetAngleText = "";
@@ -492,6 +492,11 @@ namespace KerbalActuators
         {
             if (rotationAngle == currentRotationAngle)
                 return;
+            if (Mathf.Abs(currentRotationAngle - rotationAngle) < 0.1f)
+            {
+                SetRotationAngle(rotationAngle);
+                return;
+            }
 
             //Angles go from 0 to 360
             rotationAngle = rotationAngle % 360.0f;
@@ -680,6 +685,13 @@ namespace KerbalActuators
 
             targetAngle = currentRotationAngle;
         }
+
+        public void SetRotationAngle(float angle)
+        {
+            rotationState = ERotationStates.Locked;
+            currentRotationAngle = angle;
+            setInitialRotation();
+        }
         #endregion
 
         #region Overrides
@@ -751,6 +763,10 @@ namespace KerbalActuators
                     if (!string.IsNullOrEmpty(runningEffectName))
                         this.part.Effect(runningEffectName, 1.0f);
                     break;
+
+                case ERotationStates.Locked:
+                    currentAngleDisplay = currentRotationAngle;
+                    return;
             }
 
             //See if we've met our target

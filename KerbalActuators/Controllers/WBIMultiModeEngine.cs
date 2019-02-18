@@ -42,9 +42,9 @@ namespace KerbalActuators
         {
         }
 
-        public override void OnStart(StartState state)
+        public override void OnAwake()
         {
-            base.OnStart(state);
+            base.OnAwake();
 
             //Get the engine list
             engineList = this.part.FindModulesImplementing<ModuleEnginesFX>();
@@ -66,11 +66,13 @@ namespace KerbalActuators
             //Setup current engine
             currentEngine = engineList[currentEngineIndex];
             currentEngineID = currentEngine.engineID;
-            if (HighLogic.LoadedSceneIsFlight)
-            {
-                currentEngine.manuallyOverridden = false;
-                currentEngine.isEnabled = true;
-            }
+            currentEngine.manuallyOverridden = false;
+            currentEngine.isEnabled = true;
+        }
+
+        public override void OnStart(StartState state)
+        {
+            base.OnStart(state);
         }
 
         public override void OnUpdate()
@@ -112,41 +114,17 @@ namespace KerbalActuators
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Next Engine")]
         public void NextEngine()
         {
-            //Shut off current engine
-            bool isIgnited = currentEngine.EngineIgnited;
-            if (isIgnited)
-                currentEngine.Shutdown();
-            currentEngine.manuallyOverridden = true;
-            currentEngine.isEnabled = false;
-
-            //Fire up the new engine
-            currentEngineIndex = (currentEngineIndex + 1) % engineList.Count;
-            currentEngine = engineList[currentEngineIndex];
-            currentEngineID = currentEngine.engineID;
-            currentEngine.manuallyOverridden = false;
-            currentEngine.isEnabled = true;
-            if (isIgnited)
-                currentEngine.Activate();
+            int engineIndex = (currentEngineIndex + 1) % engineList.Count;
+            SetupEngine(engineIndex, HighLogic.LoadedSceneIsFlight);
         }
 
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Previous Engine")]
         public void PreviousEngine()
         {
-            //Shut off current engine
-            bool isIgnited = currentEngine.EngineIgnited;
-            if (isIgnited)
-                currentEngine.Shutdown();
-            currentEngine.Shutdown();
-            currentEngine.manuallyOverridden = true;
-            currentEngine.isEnabled = false;
-
-            currentEngineIndex = (currentEngineIndex - 1) % engineList.Count;
-            currentEngine = engineList[currentEngineIndex];
-            currentEngineID = currentEngine.engineID;
-            currentEngine.manuallyOverridden = false;
-            currentEngine.isEnabled = true;
-            if (isIgnited)
-                currentEngine.Activate();
+            int engineIndex = (currentEngineIndex - 1) % engineList.Count;
+            if (engineIndex < 0)
+                engineIndex = engineList.Count - 1;
+            SetupEngine(engineIndex, HighLogic.LoadedSceneIsFlight);
         }
         #endregion
 
@@ -180,6 +158,31 @@ namespace KerbalActuators
         #endregion
 
         #region Helpers
+        public void SetupEngine(int engineIndex, bool isInFlight)
+        {
+            ModuleEnginesFX previousEngine = currentEngine;
+
+            //Get the new current engine
+            currentEngineIndex = engineIndex;
+            currentEngine = engineList[currentEngineIndex];
+            currentEngineID = currentEngine.engineID;
+
+            //In-flight stuff
+            if (isInFlight)
+            {
+                currentEngine.Activate();
+                currentEngine.currentThrottle = previousEngine.currentThrottle;
+                previousEngine.Shutdown();
+            }
+
+            //Disable previous engine
+            previousEngine.manuallyOverridden = true;
+            previousEngine.isEnabled = false;
+
+            //Enable current engine
+            currentEngine.manuallyOverridden = false;
+            currentEngine.isEnabled = true;
+        }
         #endregion
 
         #region IEngineStatus
