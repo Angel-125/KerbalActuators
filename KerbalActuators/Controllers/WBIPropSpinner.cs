@@ -11,7 +11,7 @@ Source code copyright 2018, by Michael Billard (Angel-125)
 License: GNU General Public License Version 3
 License URL: http://www.gnu.org/licenses/
 Wild Blue Industries is trademarked by Michael Billard and may be used for non-commercial purposes. All other rights reserved.
-Note that Wild Blue Industries is a ficticious entity 
+Note that Wild Blue Industries is a ficticious entity
 created for entertainment purposes. It is in no way meant to represent a real entity.
 Any similarity to a real entity is purely coincidental.
 
@@ -217,8 +217,8 @@ namespace KerbalActuators
         protected ERotationStates rotationState = ERotationStates.Locked;
         protected float degPerUpdate;
         protected Transform rotorTransform = null;
-        protected Transform fwdThrustTransform = null;
-        protected Transform revThrustTransform = null;
+        protected Transform[] fwdThrustTransform;
+        protected Transform[] revThrustTransform;
         protected Vector3 rotationAxis = new Vector3(0, 0, 1);
         protected float currentThrustNormalized = 0f;
         protected float targetThrustNormalized = 0f;
@@ -310,10 +310,10 @@ namespace KerbalActuators
             {
                 if (canReverseThrust)
                 {
-                    fwdThrustTransform = this.part.FindModelTransform(thrustTransform);
-                    revThrustTransform = this.part.FindModelTransform(reverseThrustTransform);
+                    fwdThrustTransform = this.part.FindModelTransforms(thrustTransform);
+                    revThrustTransform = this.part.FindModelTransforms(reverseThrustTransform);
 
-                    if (fwdThrustTransform != null && revThrustTransform != null)
+                    if (fwdThrustTransform.Length >= 0 && revThrustTransform.Length >= 0)
                     {
                         SetupThrustTransform();
                         SetupAnimation();
@@ -328,14 +328,14 @@ namespace KerbalActuators
                 }
                 else
                 {
-                    fwdThrustTransform = this.part.FindModelTransform(thrustTransform);
+                    fwdThrustTransform = this.part.FindModelTransforms(thrustTransform);
                     revThrustTransform = fwdThrustTransform;
                 }
             }
 
             //Rotor transforms
             setupRotorTransforms();
-        }        
+        }
         #endregion
 
         #region API
@@ -449,13 +449,20 @@ namespace KerbalActuators
             if (reverseThrust)
             {
                 Events["ToggleThrustTransform"].guiName = Localizer.Format(forwardThrustActionName);
-                engine.thrustTransforms.Add(revThrustTransform);
+                for (int i = 0; i < revThrustTransform.Length; i++)
+                {
+                    engine.thrustTransforms.Add(revThrustTransform[i]);
+                }
+
             }
 
             else
             {
                 Events["ToggleThrustTransform"].guiName = Localizer.Format(reverseThrustActionName);
-                engine.thrustTransforms.Add(fwdThrustTransform);
+                for (int i = 0; i < fwdThrustTransform.Length; i++)
+                {
+                    engine.thrustTransforms.Add(fwdThrustTransform[i]);
+                }
             }
         }
 
@@ -475,7 +482,7 @@ namespace KerbalActuators
                 reverseThrustAnimationState.enabled = true;
                 reverseThrustAnimationState.wrapMode = WrapMode.ClampForever;
                 anim.Blend(reverseThrustAnimation);
-    
+
             }
         }
 
@@ -486,7 +493,7 @@ namespace KerbalActuators
         {
             if (reverseThrustAnimationState != null)
             {
-           
+
                 if (reverseThrust)
                 {
                     reverseThrustAnimationState.enabled = true;
@@ -558,11 +565,11 @@ namespace KerbalActuators
                 return false;
             else
                 return true;
-        }     
+        }
 
         protected void rotatePropellersShutdown()
         {
-           
+
             //If our spool rate is 0 then spin them back to the neutral position.
             //Useful for making sure our rotors are in the right position for folding.
             if (currentSpoolRate <= 0.001f)
@@ -640,7 +647,7 @@ namespace KerbalActuators
 
             if (reverseThrust)
                 rotationPerFrame *= -1.0f;
-            
+
 
             rotorTransform.Rotate(rotationAxis * rotationPerFrame);
         }
