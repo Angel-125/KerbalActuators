@@ -15,7 +15,12 @@ namespace KerbalActuators
     {
         Forward,
         Reverse,
-        VTOL
+        VTOL,
+        Left,
+        Right,
+        Idle,
+        Down,
+        Off
     }
 
     /// <summary>
