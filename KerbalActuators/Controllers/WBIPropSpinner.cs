@@ -324,12 +324,17 @@ namespace KerbalActuators
                         Actions["ToggleThrustTransformAction"].actionGroup = KSPActionGroup.None;
                         Events["ToggleThrustTransform"].active = false;
                         Actions["ToggleThrustTransformAction"].active = false;
+                        Actions["ToggleThrustTransformAction"].active = false;
                     }
                 }
                 else
                 {
                     fwdThrustTransform = this.part.FindModelTransforms(thrustTransform);
                     revThrustTransform = fwdThrustTransform;
+                    Actions["ToggleThrustTransformAction"].actionGroup = KSPActionGroup.None;
+                    Events["ToggleThrustTransform"].active = false;
+                    Actions["ToggleThrustTransformAction"].active = false;
+                    Actions["ToggleThrustTransformAction"].active = false;
                 }
             }
 
@@ -395,22 +400,16 @@ namespace KerbalActuators
             if (engine == null)
                 return;
 
-            reverseThrust = isReverseThrust;
-            SetupThrustTransform();
-            HandleReverseThrustAnimation();
-
-            //Look for other prop spinners in this part and reverse them too.
+            //Look for prop spinners in this part and reverse them.
             List<WBIPropSpinner> spinners = this.part.FindModulesImplementing<WBIPropSpinner>();
+            WBIPropSpinner spinner;
             int count = spinners.Count;
             for (int index = 0; index < count; index++)
             {
-                if (spinners[index] == this)
-                {
-                    continue;
-                }
-                spinners[index].reverseThrust = this.reverseThrust;
-                spinners[index].SetupThrustTransform();
-                spinners[index].HandleReverseThrustAnimation();
+                spinner = spinners[index];
+                spinner.reverseThrust = this.reverseThrust;
+                spinner.SetupThrustTransform();
+                spinner.HandleReverseThrustAnimation();
             }
         }
 
@@ -443,6 +442,9 @@ namespace KerbalActuators
         {
             if (engine == null)
                 return;
+            if (!canReverseThrust)
+                return;
+            Debug.Log("[WBIPropSpinner] - SetupThrustTransform called. reverseThrust: " + reverseThrust);
 
             //We have separate forward and reverse thrust transforms. Switch them out.
             engine.thrustTransforms.Clear();
@@ -453,7 +455,7 @@ namespace KerbalActuators
                 {
                     engine.thrustTransforms.Add(revThrustTransform[i]);
                 }
-
+                engine.thrustVectorTransformName = reverseThrustTransform;
             }
 
             else
@@ -463,7 +465,9 @@ namespace KerbalActuators
                 {
                     engine.thrustTransforms.Add(fwdThrustTransform[i]);
                 }
+                engine.thrustVectorTransformName = thrustTransform;
             }
+            MonoUtilities.RefreshContextWindows(this.part);
         }
 
         /// <summary>
