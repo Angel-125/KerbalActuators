@@ -205,6 +205,13 @@ namespace KerbalActuators
         public bool enabledByRCS = false;
 
         /// <summary>
+        /// Indicates whether or not the spinning is controlled by throttle setting. If the throttle is zero, the props won't spin at all. This only applies if t he part has an engine part module.
+        /// Default is false.
+        /// </summary>
+        [KSPField]
+        public bool isThrottleControlled = false;
+
+        /// <summary>
         /// When the spinner is controlled by RCS, the throttle controls spin rate.
         /// This field specifies at which level of throttle to blur the rotors.
         /// </summary>
@@ -223,6 +230,7 @@ namespace KerbalActuators
         protected float currentThrustNormalized = 0f;
         protected float targetThrustNormalized = 0f;
         protected float currentSpoolRate;
+        protected float previousThrottle = 0f;
         protected ModuleEnginesFX engine;
         protected MultiModeEngine engineSwitcher;
         protected Dictionary<string, ModuleEnginesFX> multiModeEngines = new Dictionary<string, ModuleEnginesFX>();
@@ -355,6 +363,22 @@ namespace KerbalActuators
         }
 
         /// <summary>
+        /// This event toggles the mirror transforms For the rotors.
+        /// </summary>
+        [KSPEvent(guiActiveEditor = true, guiName = "Mirror Rotors")]
+        public void ToggleRotorMirror()
+        {
+            List<WBIPropSpinner> spinners = this.part.FindModulesImplementing<WBIPropSpinner>();
+            int count = spinners.Count;
+        
+            for (int index = 0; index < count; index++)
+            {
+                spinners[index].mirrorRotation = !spinners[index].mirrorRotation;
+                spinners[index].setupRotorTransforms();
+            }
+        }
+
+        /// <summary>
         /// This action toggles the thrust transforms from forward to reverse and back.
         /// </summary>
         /// <param name="param">A KSPActionParam with action state information.</param>
@@ -433,6 +457,7 @@ namespace KerbalActuators
         public virtual void SetGUIVisible(bool isVisible)
         {
             Events["ToggleThrustTransform"].active = isVisible;
+            Events["ToggleRotorMirror"].active = isVisible;
         }
 
         /// <summary>
@@ -660,10 +685,13 @@ namespace KerbalActuators
         {
             if (engine != null)
             {
-                return engine.finalThrust / engine.maxThrust;
+                if (isThrottleControlled)
+                    return FlightInputHandler.state.mainThrottle;
+                else
+                    return engine.finalThrust / engine.maxThrust;
             }
 
-            else if (enabledByRCS && FlightGlobals.ActiveVessel.ActionGroups[KSPActionGroup.RCS])
+            else if ((enabledByRCS || isThrottleControlled) && FlightGlobals.ActiveVessel.ActionGroups[KSPActionGroup.RCS])
             {
                 return FlightInputHandler.state.mainThrottle;
             }
@@ -678,7 +706,7 @@ namespace KerbalActuators
         {
             rotationState = ERotationStates.Spinning;
             float minRatio = minThrustRotorBlur / 100.0f;
-            if (enabledByRCS)
+            if (enabledByRCS || isThrottleControlled)
                 minRatio = minThrottleBlur / 100.0f;
 
             //If the thrust/throttle ratio is >= minimum ratio then show the blurred rotors
@@ -720,11 +748,33 @@ namespace KerbalActuators
                     setupRotorTransforms();
                 }
 
-                currentSpoolRate = Mathf.Lerp(currentSpoolRate, 1.0f, TimeWarp.fixedDeltaTime / rotorSpoolTime);
-                if (currentSpoolRate > 0.995f)
-                    currentSpoolRate = 1.0f;
+                //Standard props will spin even when idle.
+                if (!isThrottleControlled)
+                {
+                    currentSpoolRate = Mathf.Lerp(currentSpoolRate, 1.0f, TimeWarp.fixedDeltaTime / rotorSpoolTime);
+                    if (currentSpoolRate > 0.995f)
+                        currentSpoolRate = 1.0f;
+                }
+
+                //If we are throttle controlled, then spool up if current throttle >= previous throttle, and spool down if current throttle < previous throttle.
+                else
+                {
+                    if (FlightInputHandler.state.mainThrottle >= previousThrottle && FlightInputHandler.state.mainThrottle > 0.0001f)
+                    {
+                        currentSpoolRate = Mathf.Lerp(currentSpoolRate, 1.0f, TimeWarp.fixedDeltaTime / rotorSpoolTime);
+                        if (currentSpoolRate > 0.995f)
+                            currentSpoolRate = 1.0f;
+                    }
+                    else
+                    {
+                        currentSpoolRate = Mathf.Lerp(currentSpoolRate, 0f, TimeWarp.fixedDeltaTime / rotorSpoolTime);
+                        if (currentSpoolRate <= 0.002f)
+                            currentSpoolRate = 0f;
+                    }
+                }
 
                 float rotationPerFrame = ((rotorRPM * 60.0f) * TimeWarp.fixedDeltaTime) * currentSpoolRate;
+
                 currentRotationAngle += rotationPerFrame;
                 currentRotationAngle = currentRotationAngle % 360.0f;
                 if (mirrorRotation)
@@ -734,9 +784,12 @@ namespace KerbalActuators
                     rotationPerFrame *= -1.0f;
                 rotorTransform.Rotate(rotationAxis * rotationPerFrame);
             }
+
+            //Record throttle setting
+            previousThrottle = FlightInputHandler.state.mainThrottle;
         }
 
-        protected void setupRotorTransforms()
+        public void setupRotorTransforms()
         {
             //Get the transforms
             if (!string.IsNullOrEmpty(standardBladesName) && standardBlades == null)

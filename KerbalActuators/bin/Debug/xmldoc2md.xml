@@ -587,6 +587,12 @@
             Default is false.
             </summary>
         </member>
+        <member name="F:KerbalActuators.WBIPropSpinner.isThrottleControlled">
+            <summary>
+            Indicates whether or not the spinning is controlled by throttle setting. If the throttle is zero, the props won't spin at all. This only applies if t he part has an engine part module.
+            Default is false.
+            </summary>
+        </member>
         <member name="F:KerbalActuators.WBIPropSpinner.minThrottleBlur">
             <summary>
             When the spinner is controlled by RCS, the throttle controls spin rate.
@@ -598,6 +604,11 @@
             Sets mirrored rotation.
             </summary>
             <param name="isMirrored">True if rotation is mirrored, false if not.</param>
+        </member>
+        <member name="M:KerbalActuators.WBIPropSpinner.ToggleRotorMirror">
+            <summary>
+            This event toggles the mirror transforms For the rotors.
+            </summary>
         </member>
         <member name="M:KerbalActuators.WBIPropSpinner.ToggleThrustTransformAction(KSPActionParam)">
             <summary>
