@@ -683,6 +683,9 @@ namespace KerbalActuators
 
         protected float getThrustThrottleRatio()
         {
+            if (!this.part.vessel.isActiveVessel)
+                return previousThrottle;
+
             if (engine != null)
             {
                 if (isThrottleControlled)
@@ -759,7 +762,13 @@ namespace KerbalActuators
                 //If we are throttle controlled, then spool up if current throttle >= previous throttle, and spool down if current throttle < previous throttle.
                 else
                 {
-                    if (FlightInputHandler.state.mainThrottle >= previousThrottle && FlightInputHandler.state.mainThrottle > 0.0001f)
+                    if (previousThrottle > 0 && !this.part.vessel.isActiveVessel)
+                    {
+                        currentSpoolRate = Mathf.Lerp(currentSpoolRate, 1.0f, TimeWarp.fixedDeltaTime / rotorSpoolTime);
+                        if (currentSpoolRate > 0.995f)
+                            currentSpoolRate = 1.0f;
+                    }
+                    else if (FlightInputHandler.state.mainThrottle >= previousThrottle && FlightInputHandler.state.mainThrottle > 0.0001f && this.part.vessel.isActiveVessel)
                     {
                         currentSpoolRate = Mathf.Lerp(currentSpoolRate, 1.0f, TimeWarp.fixedDeltaTime / rotorSpoolTime);
                         if (currentSpoolRate > 0.995f)
@@ -786,7 +795,8 @@ namespace KerbalActuators
             }
 
             //Record throttle setting
-            previousThrottle = FlightInputHandler.state.mainThrottle;
+            if (this.part.vessel.isActiveVessel)
+                previousThrottle = FlightInputHandler.state.mainThrottle;
         }
 
         public void setupRotorTransforms()
