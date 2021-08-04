@@ -30,6 +30,9 @@ namespace KerbalActuators
         [KSPField(guiName = "Switch mode on flameout", isPersistant = true, guiActiveEditor = true, guiActive = true)]
         [UI_Toggle(enabledText = "Yes", disabledText = "No")]
         public bool autoSwitch;
+
+        [KSPField]
+        public bool allowInFlightSwitching = true;
         #endregion
 
         #region Housekeeping
@@ -68,6 +71,20 @@ namespace KerbalActuators
             currentEngineID = currentEngine.engineID;
             currentEngine.manuallyOverridden = false;
             currentEngine.isEnabled = true;
+
+            Fields["currentEngineID"].guiActive = allowInFlightSwitching;
+            Fields["autoSwitch"].guiActive = allowInFlightSwitching;
+            Events["NextEngine"].guiActive = allowInFlightSwitching;
+            Events["PreviousEngine"].guiActive = allowInFlightSwitching;
+
+            Fields["currentEngineID"].guiActiveEditor = !allowInFlightSwitching;
+            Fields["autoSwitch"].guiActiveEditor = !allowInFlightSwitching;
+            Events["NextEngine"].guiActiveEditor = !allowInFlightSwitching;
+            Events["PreviousEngine"].guiActiveEditor = !allowInFlightSwitching;
+
+            autoSwitch = allowInFlightSwitching;
+
+            Actions["OnToggleModeAction"].active = allowInFlightSwitching;
         }
 
         public override void OnStart(StartState state)
@@ -167,17 +184,20 @@ namespace KerbalActuators
             currentEngine = engineList[currentEngineIndex];
             currentEngineID = currentEngine.engineID;
 
+            int count = engineList.Count;
+            for (int index = 0; index < count; index++)
+            {
+                engineList[index].manuallyOverridden = true;
+                engineList[index].isEnabled = false;
+                engineList[index].Shutdown();
+            }
+
             //In-flight stuff
             if (isInFlight)
             {
                 currentEngine.Activate();
                 currentEngine.currentThrottle = previousEngine.currentThrottle;
-                previousEngine.Shutdown();
             }
-
-            //Disable previous engine
-            previousEngine.manuallyOverridden = true;
-            previousEngine.isEnabled = false;
 
             //Enable current engine
             currentEngine.manuallyOverridden = false;

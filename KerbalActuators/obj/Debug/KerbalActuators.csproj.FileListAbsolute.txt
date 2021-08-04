@@ -75,3 +75,4 @@ C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\Ker
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.dll
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.pdb
 C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\obj\Debug\KerbalActuators.csprojAssemblyReference.cache
+C:\Projects\KSP\WildBlueIndustries\KerbalActuators\KerbalActuators\bin\Debug\UnityEngine.SubsystemsModule.dll
