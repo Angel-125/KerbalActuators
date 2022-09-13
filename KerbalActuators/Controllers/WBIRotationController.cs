@@ -244,7 +244,7 @@ namespace KerbalActuators
         /// <summary>
         /// Current state of the rotator
         /// </summary>
-        [KSPField(isPersistant = true, guiActiveEditor = true, guiActive = true, guiName = "State")]
+        [KSPField(isPersistant = true, guiActiveEditor = true, guiActive = true, guiName = "State", groupName = "Actuators", groupDisplayName = "Actuators")]
         public string state;
 
         /// <summary>
@@ -256,7 +256,7 @@ namespace KerbalActuators
         /// <summary>
         /// A user-friendly version of the current rotation angle.
         /// </summary>
-        [KSPField(guiActiveEditor = true, guiActive = true, guiName = "Angle", guiFormat = "f2", guiUnits = "deg.")]
+        [KSPField(guiActiveEditor = true, guiActive = true, guiName = "Angle", guiFormat = "f2", guiUnits = "deg.", groupName = "Actuators", groupDisplayName = "Actuators")]
         public float currentAngleDisplay;
 
         /// <summary>
@@ -373,7 +373,7 @@ namespace KerbalActuators
         /// <summary>
         /// This event tells the rotator to rotate to its minimum angle.
         /// </summary>
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Rotate To Minimum")]
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Rotate To Minimum", groupName = "Actuators", groupDisplayName = "Actuators")]
         public void RotateToMin()
         {
             RotateMin();
@@ -394,6 +394,26 @@ namespace KerbalActuators
         }
 
         /// <summary>
+        /// Action to rotate the servo upwards
+        /// </summary>
+        /// <param name="param"></param>
+        [KSPAction("Rotate Up")]
+        public void ActionRotateUp(KSPActionParam param)
+        {
+            RotateUp(rotationDegPerSec);
+        }
+
+        /// <summary>
+        /// Action to rotate the servo downwards
+        /// </summary>
+        /// <param name="param"></param>
+        [KSPAction("Rotate Down")]
+        public void ActionRotateDown(KSPActionParam param)
+        {
+            RotateDown(rotationDegPerSec);
+        }
+
+        /// <summary>
         /// Action that rotates the mesh transform to its maximum angle.
         /// </summary>
         /// <param name="param">A KSPActionParam containing state information.</param>
@@ -406,7 +426,7 @@ namespace KerbalActuators
         /// <summary>
         /// This event tells the rotator to rotate to its maximum angle.
         /// </summary>
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Rotate To Maximum")]
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Rotate To Maximum", groupName = "Actuators", groupDisplayName = "Actuators")]
         public void RotateToMax()
         {
             RotateMax();
@@ -439,10 +459,11 @@ namespace KerbalActuators
         /// <summary>
         /// This event tells the rotator to rotate the mesh transform to its neutral angle.
         /// </summary>
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Rotate To Neutral")]
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Rotate To Neutral", groupName = "Actuators", groupDisplayName = "Actuators")]
         public void RotateToNeutral()
         {
             RotateNeutral();
+            updateCounterparts();
         }
 
         /// <summary>
@@ -547,6 +568,20 @@ namespace KerbalActuators
             //Update state
             rotationStateInt = (int)rotationState;
             state = kRotating;
+        }
+
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Rotate Up", groupName = "Actuators", groupDisplayName = "Actuators")]
+        public void RotateUp()
+        {
+            RotateUp(rotationDegPerSec);
+            updateCounterparts();
+        }
+
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Rotate Down", groupName = "Actuators", groupDisplayName = "Actuators")]
+        public void RotateDown()
+        {
+            RotateDown(rotationDegPerSec);
+            updateCounterparts();
         }
 
         /// <summary>

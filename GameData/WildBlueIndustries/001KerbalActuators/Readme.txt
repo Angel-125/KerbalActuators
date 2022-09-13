@@ -24,6 +24,10 @@ Copy the contents of the mod's GameData directory into your GameData folder.
 
 ---REVISION HISORY---
 
+1.8.5
+- Grouped events into PAW groups.
+- Hover controls linked to axis action groups.
+
 1.8.4
 - Recompiled for KSP 1.12.2.
 

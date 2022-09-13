@@ -126,9 +126,17 @@ namespace KerbalActuators
         #endregion
 
         #region Housekeeping
+        //Control axis groups
+        //KSPAxisGroup.TranslateX: L/R KSPAxisGroup.TranslateY: U/D KSPAxisGroup.TranslateZ: F/B
+//        [KSPAxisField(axisGroup = KSPAxisGroup.TranslateY, axisMode = KSPAxisMode.Absolute, guiActive = false, guiActiveEditor = false, guiName = "Hover: U/D", ignoreIncrementByZero = true, incrementalSpeed = 10f, isPersistant = true, maxValue = 1f, minValue = -1f)]
+//        [UI_FloatRange(affectSymCounterparts = UI_Scene.All, maxValue = 1f, minValue = -1f, stepIncrement = 10f)]
+//        public float translateUpDn;
+
         protected MultiModeEngine engineSwitcher;
         protected WBIMultiModeEngine wbiMultiModeEngine;
         protected Dictionary<string, ModuleEnginesFX> multiModeEngines = new Dictionary<string, ModuleEnginesFX>();
+        protected bool translationKeysActive = false;
+        bool updateCounterparts;
         #endregion
 
         #region API
@@ -144,7 +152,7 @@ namespace KerbalActuators
         /// <summary>
         /// This event toggles the hover mode.
         /// </summary>
-        [KSPEvent(guiActive = true, guiName = "Toggle Hover")]
+        [KSPEvent(guiActive = true, guiName = "Toggle Hover", groupName = "Hover", groupDisplayName = "Hover")]
         public virtual void ToggleHoverMode()
         {
             setupEngines();
@@ -156,6 +164,9 @@ namespace KerbalActuators
                 ActivateHover();
             else
                 DeactivateHover();
+
+            if (!updateCounterparts)
+                return;
 
             if (this.part.symmetryCounterparts.Count > 0)
             {
@@ -231,6 +242,25 @@ namespace KerbalActuators
             if (engine == null)
                 return;
 
+            //Translation axis
+            /*
+            if (translateUpDn != 0 && !translationKeysActive)
+            {
+                translationKeysActive = true;
+                if (translateUpDn > 0)
+                {
+                    verticalSpeed += 1f;
+                }
+                else
+                    verticalSpeed -= 1f;
+                printSpeed();
+            }
+            else
+            {
+                translationKeysActive = false;
+            }
+            */
+
             //This is crude but effective. What we do is jitter the engine throttle up and down to maintain desired vertical speed.
             //It tends to vibrate the engines but they're ok. This will have to do until I can figure out the relation between
             //engine.finalThrust, engine.maxThrust, and the force needed to make the craft hover.
@@ -270,23 +300,40 @@ namespace KerbalActuators
         /// <summary>
         /// This event increases the vertical speed by verticalSpeedIncrements (in meters/sec)/
         /// </summary>
-        [KSPEvent(guiActive = true, guiName = "Vertical Speed +")]
+        [KSPEvent(guiActive = true, guiName = "Vertical Speed +", groupName = "Hover", groupDisplayName = "Hover")]
         public virtual void IncreaseVerticalSpeed()
         {
             SetVerticalSpeed(verticalSpeed + verticalSpeedIncrements);
             printSpeed();
-            updateSymmetricalSpeeds();
+            if (updateCounterparts)
+                updateSymmetricalSpeeds();
         }
 
         /// <summary>
         /// This event decreases the vertical speed by verticalSpeedIncrements (in meters/sec).
         /// </summary>
-        [KSPEvent(guiActive = true, guiName = "Vertical Speed -")]
+        [KSPEvent(guiActive = true, guiName = "Vertical Speed -", groupName = "Hover", groupDisplayName = "Hover")]
         public virtual void DecreaseVerticalSpeed()
         {
-            SetVerticalSpeed(verticalSpeed + verticalSpeedIncrements);
+            SetVerticalSpeed(verticalSpeed - verticalSpeedIncrements);
             printSpeed();
-            updateSymmetricalSpeeds();
+            if (updateCounterparts)
+                updateSymmetricalSpeeds();
+        }
+
+        /// <summary>
+        /// This event kills the vertical speed.
+        /// </summary>
+        [KSPEvent(guiActive = true, guiName = "Kill Vertical Speed -", groupName = "Hover", groupDisplayName = "Hover")]
+        public virtual void killVerticalSpeed()
+        {
+            if (!hoverActive)
+                return;
+
+            SetVerticalSpeed(0);
+            printSpeed();
+            if (updateCounterparts)
+                updateSymmetricalSpeeds();
         }
 
         /// <summary>
@@ -296,7 +343,9 @@ namespace KerbalActuators
         [KSPAction("Toggle Hover")]
         public virtual void toggleHoverAction(KSPActionParam param)
         {
+            updateCounterparts = false;
             ToggleHoverMode();
+            updateCounterparts = true;
         }
 
         /// <summary>
@@ -304,9 +353,11 @@ namespace KerbalActuators
         /// </summary>
         /// <param name="param">A KSPActionParam containing action state information.</param>
         [KSPAction("Vertical Speed +")]
-        public virtual void increaseVerticalSpeed(KSPActionParam param)
+        public virtual void increaseVerticalSpeedAction(KSPActionParam param)
         {
+            updateCounterparts = false;
             IncreaseVerticalSpeed();
+            updateCounterparts = true;
         }
 
         /// <summary>
@@ -314,9 +365,23 @@ namespace KerbalActuators
         /// </summary>
         /// <param name="param">A KSPActionParam containing action state information.</param>
         [KSPAction("Vertical Speed -")]
-        public virtual void decreaseVerticalSpeed(KSPActionParam param)
+        public virtual void decreaseVerticalSpeedAction(KSPActionParam param)
         {
+            updateCounterparts = false;
             DecreaseVerticalSpeed();
+            updateCounterparts = true;
+        }
+
+        /// <summary>
+        /// This action kills the vertical speed.
+        /// </summary>
+        /// <param name="param">A KSPActionParam containing action state information.</param>
+        [KSPAction("Kill Vertical Speed", actionGroup = KSPActionGroup.Brakes)]
+        public virtual void killVerticalSpeedAction(KSPActionParam param)
+        {
+            updateCounterparts = false;
+            killVerticalSpeed();
+            updateCounterparts = true;
         }
 
         /// <summary>
@@ -473,6 +538,7 @@ namespace KerbalActuators
 
         protected void setupEngines()
         {
+            multiModeEngines.Clear();
             wbiMultiModeEngine = this.part.FindModuleImplementing<WBIMultiModeEngine>();
             if (wbiMultiModeEngine != null)
             {

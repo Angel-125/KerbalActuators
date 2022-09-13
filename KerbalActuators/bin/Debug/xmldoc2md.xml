@@ -376,21 +376,32 @@
             This event decreases the vertical speed by verticalSpeedIncrements (in meters/sec).
             </summary>
         </member>
+        <member name="M:KerbalActuators.WBIHoverController.killVerticalSpeed">
+            <summary>
+            This event kills the vertical speed.
+            </summary>
+        </member>
         <member name="M:KerbalActuators.WBIHoverController.toggleHoverAction(KSPActionParam)">
             <summary>
             This action toggles the hover mode.
             </summary>
             <param name="param">A KSPActionParam containing action state information.</param>
         </member>
-        <member name="M:KerbalActuators.WBIHoverController.increaseVerticalSpeed(KSPActionParam)">
+        <member name="M:KerbalActuators.WBIHoverController.increaseVerticalSpeedAction(KSPActionParam)">
             <summary>
             This action increases the vertical speed by verticalSpeedIncrements (in meters/sec).
             </summary>
             <param name="param">A KSPActionParam containing action state information.</param>
         </member>
-        <member name="M:KerbalActuators.WBIHoverController.decreaseVerticalSpeed(KSPActionParam)">
+        <member name="M:KerbalActuators.WBIHoverController.decreaseVerticalSpeedAction(KSPActionParam)">
             <summary>
             This action decreases the vertical speed by verticalSpeedIncrements (in meters/sec).
+            </summary>
+            <param name="param">A KSPActionParam containing action state information.</param>
+        </member>
+        <member name="M:KerbalActuators.WBIHoverController.killVerticalSpeedAction(KSPActionParam)">
+            <summary>
+            This action kills the vertical speed.
             </summary>
             <param name="param">A KSPActionParam containing action state information.</param>
         </member>
@@ -926,6 +937,18 @@
             Rotates the mesh transform to its minimum angle
             </summary>
             <param name="applyToCounterparts">True if it should tell its counterparts to rotate to minumum as well.</param>
+        </member>
+        <member name="M:KerbalActuators.WBIRotationController.ActionRotateUp(KSPActionParam)">
+            <summary>
+            Action to rotate the servo upwards
+            </summary>
+            <param name="param"></param>
+        </member>
+        <member name="M:KerbalActuators.WBIRotationController.ActionRotateDown(KSPActionParam)">
+            <summary>
+            Action to rotate the servo downwards
+            </summary>
+            <param name="param"></param>
         </member>
         <member name="M:KerbalActuators.WBIRotationController.ActionRotateToMax(KSPActionParam)">
             <summary>

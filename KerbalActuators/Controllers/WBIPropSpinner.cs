@@ -391,7 +391,7 @@ namespace KerbalActuators
         /// <summary>
         /// This event toggles the thrust transforms from forward to reverse and back. It also plays the thrust reverse animation, if any.
         /// </summary>
-        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Thrust: Forward")]
+        [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "Thrust: Forward", groupName = "Propellers", groupDisplayName = "Propellers")]
         public void ToggleThrustTransform()
         {
             if (engine == null)
@@ -711,6 +711,13 @@ namespace KerbalActuators
             float minRatio = minThrustRotorBlur / 100.0f;
             if (enabledByRCS || isThrottleControlled)
                 minRatio = minThrottleBlur / 100.0f;
+
+            if (!isBlurred && isHovering && part.vessel.situation == Vessel.Situations.FLYING)
+            {
+                isBlurred = true;
+                currentSpoolRate = 1.0f;
+                setupRotorTransforms();
+            }
 
             //If the thrust/throttle ratio is >= minimum ratio then show the blurred rotors
             float thrustThrottleRatio = getThrustThrottleRatio();
