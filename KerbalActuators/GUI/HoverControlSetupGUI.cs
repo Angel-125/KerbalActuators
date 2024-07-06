@@ -35,25 +35,6 @@ namespace KerbalActuators
         public override void SetVisible(bool newValue)
         {
             base.SetVisible(newValue);
-
-            if (newValue)
-                loadControls();
-        }
-
-        protected void loadControls()
-        {
-            vtolManager.LoadControls();
-
-            controlCodes = vtolManager.controlCodes;
-
-            List<string> labels = new List<string>();
-
-            foreach (string key in controlCodes.Keys)
-            {
-                labels.Add(key);
-            }
-
-            controlLabels = labels.ToArray();
         }
 
         protected override void DrawWindowContents(int windowId)
@@ -79,12 +60,6 @@ namespace KerbalActuators
 
             //Draw OK and Cancel buttons
             GUILayout.BeginHorizontal();
-
-            if (GUILayout.Button("Accept"))
-            {
-                SetVisible(false);
-                vtolManager.SetControlCodes(controlCodes);
-            }
 
             if (GUILayout.Button("Cancel"))
                 SetVisible(false);

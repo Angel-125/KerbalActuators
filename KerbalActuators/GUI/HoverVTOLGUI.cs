@@ -290,14 +290,14 @@ namespace KerbalActuators
                     vtolManager.ToggleHover();
                 }
             }
-            GUILayout.Label(vtolManager.codeToggleHover.ToString());
+            GUILayout.Label("CTL + H");
             GUILayout.EndVertical();
 
             GUILayout.BeginVertical();
             if (GUILayout.Button("VSPD\r\n--"))
                 vtolManager.DecreaseVerticalSpeed(vtolManager.verticalSpeedIncrements);
 
-            GUILayout.Label(vtolManager.LabelForKeyCode(vtolManager.codeDecreaseVSpeed));
+            GUILayout.Label(GameSettings.TRANSLATE_DOWN.name);
             GUILayout.EndVertical();
 
             if (GUILayout.RepeatButton("VSPD\r\n-"))
@@ -306,7 +306,7 @@ namespace KerbalActuators
             GUILayout.BeginVertical();
             if (GUILayout.Button("VSPD\r\n0"))
                 vtolManager.KillVerticalSpeed();
-            GUILayout.Label(vtolManager.LabelForKeyCode(vtolManager.codeZeroVSpeed));
+            GUILayout.Label(GameSettings.BRAKES.name);
             GUILayout.EndVertical();
 
             if (GUILayout.RepeatButton("VSPD\r\n+"))
@@ -316,7 +316,7 @@ namespace KerbalActuators
             if (GUILayout.Button("VSPD\r\n++"))
                 vtolManager.IncreaseVerticalSpeed(vtolManager.verticalSpeedIncrements);
 
-            GUILayout.Label(vtolManager.LabelForKeyCode(vtolManager.codeIncreaseVSpeed));
+            GUILayout.Label(GameSettings.TRANSLATE_UP.name);
             GUILayout.EndVertical();
 
             GUILayout.EndHorizontal();

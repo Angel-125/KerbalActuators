@@ -22,6 +22,12 @@ namespace KerbalActuators
 {
     public delegate void DrawControllerDelegate();
 
+    public class KAEvents
+    {
+        public static EventData<Part, float> onControllerUpdatedVerticalSpeed = new EventData<Part, float>("onControllerUpdatedVerticalSpeed");
+        public static EventData<Part, bool> onControllerUpdatedHoverActive = new EventData<Part, bool>("onControllerUpdatedHoverActive");
+    }
+
     public struct WBICustomDrawController
     {
         public PartModule partModule;
@@ -40,17 +46,12 @@ namespace KerbalActuators
         public static WBIVTOLManager Instance;
         public List<WBICustomDrawController> drawControllers = new List<WBICustomDrawController>();
 
-        public KeyCode codeToggleHover = KeyCode.Insert;
-        public KeyCode codeIncreaseVSpeed = KeyCode.PageUp;
-        public KeyCode codeDecreaseVSpeed = KeyCode.PageDown;
-        public KeyCode codeZeroVSpeed = KeyCode.Delete;
-
         public WBIThrustModes thrustMode;
         public bool hoverActive = false;
         public float verticalSpeed = 0f;
         public float verticalSpeedIncrements = 1f;
         public Vessel vessel;
-        public Dictionary<string, KeyCode> controlCodes = new Dictionary<string,KeyCode>();
+        public Dictionary<string, KeyCode> controlCodes = new Dictionary<string, KeyCode>();
 
         private IAirParkController airParkController;
         private IHoverController[] hoverControllers;
@@ -58,7 +59,6 @@ namespace KerbalActuators
         private IThrustVectorController[] thrustVectorControllers;
         private ICustomController[] customControllers;
         private HoverVTOLGUI hoverGUI = null;
-        private string hoverControlsPath;
 
         #region API
         public static void AddCustomDrawController(PartModule module, string methodName)
@@ -162,15 +162,23 @@ namespace KerbalActuators
             GameEvents.onVesselLoaded.Add(VesselWasLoaded);
             GameEvents.onVesselChange.Add(VesselWasChanged);
             GameEvents.onStageActivate.Add(OnStageActivate);
+            KAEvents.onControllerUpdatedVerticalSpeed.Add(onControllerUpdatedVerticalSpeed);
+            KAEvents.onControllerUpdatedHoverActive.Add(onControllerUpdatedHoverActive);
 
             hoverGUI = new HoverVTOLGUI();
             hoverGUI.vtolManager = this;
             hoverGUI.hoverSetupGUI.vtolManager = this;
 
             this.vessel = FlightGlobals.ActiveVessel;
+        }
 
-            //Get the current control code mappings
-            LoadControls();
+        public void Destroy()
+        {
+            GameEvents.onVesselLoaded.Remove(VesselWasLoaded);
+            GameEvents.onVesselChange.Remove(VesselWasChanged);
+            GameEvents.onStageActivate.Remove(OnStageActivate);
+            KAEvents.onControllerUpdatedVerticalSpeed.Remove(onControllerUpdatedVerticalSpeed);
+            KAEvents.onControllerUpdatedHoverActive.Remove(onControllerUpdatedHoverActive);
         }
 
         public void ToggleGUI()
@@ -202,32 +210,39 @@ namespace KerbalActuators
 
         public void Update()
         {
-            if (Input.GetKeyDown(codeDecreaseVSpeed))
-            {
-                DecreaseVerticalSpeed();
-                printSpeed();
-            }
-
-            if (Input.GetKeyDown(codeIncreaseVSpeed))
-            {
-                IncreaseVerticalSpeed();
-                printSpeed();
-            }
-
-            if (Input.GetKeyDown(codeZeroVSpeed))
-            {
-                KillVerticalSpeed();
-                printSpeed();
-            }
-
-            if (Input.GetKeyDown(codeToggleHover))
+            if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) && Input.GetKeyUp(KeyCode.H))
             {
                 ToggleHover();
 
                 if (hoverActive)
-                    ScreenMessages.PostScreenMessage(new ScreenMessage("Hover ON", 1f, ScreenMessageStyle.UPPER_CENTER));
+                    ScreenMessages.PostScreenMessage(new ScreenMessage("Hover ON", 1f, ScreenMessageStyle.UPPER_LEFT));
                 else
-                    ScreenMessages.PostScreenMessage(new ScreenMessage("Hover OFF", 1f, ScreenMessageStyle.UPPER_CENTER));
+                    ScreenMessages.PostScreenMessage(new ScreenMessage("Hover OFF", 1f, ScreenMessageStyle.UPPER_LEFT));
+            }
+
+            if (hoverActive)
+            {
+                if (GameSettings.TRANSLATE_UP.GetKeyUp())
+                {
+                    IncreaseVerticalSpeed();
+                    if (verticalSpeed.Equals(0))
+                        KillVerticalSpeed();
+                    printSpeed();
+                }
+
+                if (GameSettings.TRANSLATE_DOWN.GetKeyUp())
+                {
+                    DecreaseVerticalSpeed();
+                    if (verticalSpeed.Equals(0))
+                        KillVerticalSpeed();
+                    printSpeed();
+                }
+
+                if (GameSettings.BRAKES.GetKeyUp())
+                {
+                    KillVerticalSpeed();
+                    printSpeed();
+                }
             }
         }
 
@@ -245,7 +260,9 @@ namespace KerbalActuators
             //Check to see if there is any hover controller that is deactivated and if so, toggle our state.
             bool allHoverStatesActive = true;
             for (int index = 0; index < hoverControllers.Length; index++)
+            {
                 allHoverStatesActive = hoverControllers[index].GetHoverState();
+            }
 
             if (!allHoverStatesActive)
                 ToggleHover();
@@ -573,7 +590,9 @@ namespace KerbalActuators
 
         public void ToggleHover()
         {
-            if (hoverControllers.Length == 0)
+            if (hoverControllers == null)
+                FindControllers(FlightGlobals.ActiveVessel);
+            if (hoverControllers != null && hoverControllers.Length == 0)
                 return;
             hoverActive = !hoverActive;
             if (!hoverActive)
@@ -673,133 +692,7 @@ namespace KerbalActuators
         #region Helpers
         public virtual void printSpeed()
         {
-            ScreenMessages.PostScreenMessage(new ScreenMessage("Hover Climb Rate: " + verticalSpeed, 1f, ScreenMessageStyle.UPPER_CENTER));
-        }
-
-        public string LabelForKeyCode(KeyCode code)
-        {
-            switch (code)
-            {
-                case KeyCode.PageDown:
-                    return "PgDn";
-
-                case KeyCode.PageUp:
-                    return "PgUp";
-
-                case KeyCode.Delete:
-                    return "Del";
-
-                default:
-                    return code.ToString();
-            }
-        }
-
-        public void LoadControls()
-        {
-            ConfigNode nodeControls = GameDatabase.Instance.GetConfigNode("VTOLCONTROLS");
-            KeyCode keyCode;
-
-            //Now load the controls
-            if (nodeControls != null)
-            {
-                if (nodeControls.HasValue(LABEL_HOVER))
-                {
-                    keyCode = (KeyCode)Enum.Parse(typeof(KeyCode), nodeControls.GetValue(LABEL_HOVER));
-                    controlCodes.Add(LABEL_HOVER, keyCode);
-                    codeToggleHover = keyCode;
-                }
-                else
-                {
-                    controlCodes.Add(LABEL_HOVER, KeyCode.Insert);
-                }
-
-                if (nodeControls.HasValue(LABEL_VSPDINC))
-                {
-                    keyCode = (KeyCode)Enum.Parse(typeof(KeyCode), nodeControls.GetValue(LABEL_VSPDINC));
-                    controlCodes.Add(LABEL_VSPDINC, keyCode);
-                    codeIncreaseVSpeed = keyCode;
-                }
-                else
-                {
-                    controlCodes.Add(LABEL_VSPDINC, KeyCode.PageUp);
-                }
-
-                if (nodeControls.HasValue(LABEL_VSPDZERO))
-                {
-                    keyCode = (KeyCode)Enum.Parse(typeof(KeyCode), nodeControls.GetValue(LABEL_VSPDZERO));
-                    controlCodes.Add(LABEL_VSPDZERO, keyCode);
-                    codeZeroVSpeed = keyCode;
-                }
-                else
-                {
-                    controlCodes.Add(LABEL_VSPDZERO, KeyCode.Delete);
-                }
-
-                if (nodeControls.HasValue(LABEL_VSPDDEC))
-                {
-                    keyCode = (KeyCode)Enum.Parse(typeof(KeyCode), nodeControls.GetValue(LABEL_VSPDDEC));
-                    controlCodes.Add(LABEL_VSPDDEC, keyCode);
-                    codeDecreaseVSpeed = keyCode;
-                }
-                else
-                {
-                    controlCodes.Add(LABEL_VSPDDEC, KeyCode.PageDown);
-                }
-
-            }
-
-            //Set default values
-            else
-            {
-                controlCodes.Clear();
-                controlCodes.Add(LABEL_HOVER, KeyCode.Insert);
-                controlCodes.Add(LABEL_VSPDINC, KeyCode.PageUp);
-                controlCodes.Add(LABEL_VSPDZERO, KeyCode.Delete);
-                controlCodes.Add(LABEL_VSPDDEC, KeyCode.PageDown);
-            }
-        }
-
-        protected void saveControls()
-        {
-            ConfigNode nodeControls = new ConfigNode();
-
-            nodeControls.name = "VTOL_CONTROLS";
-
-            nodeControls.AddValue(LABEL_HOVER, controlCodes[LABEL_HOVER]);
-            nodeControls.AddValue(LABEL_VSPDINC, controlCodes[LABEL_VSPDINC]);
-            nodeControls.AddValue(LABEL_VSPDZERO, controlCodes[LABEL_VSPDZERO]);
-            nodeControls.AddValue(LABEL_VSPDDEC, controlCodes[LABEL_VSPDDEC]);
-
-            nodeControls.Save(hoverControlsPath);
-        }
-
-        public virtual void SetControlCodes(Dictionary<string, KeyCode> newCodes)
-        {
-            controlCodes = newCodes;
-
-            foreach (string key in newCodes.Keys)
-            {
-                switch (key)
-                {
-                    case LABEL_HOVER:
-                        codeToggleHover = newCodes[key];
-                        break;
-
-                    case LABEL_VSPDINC:
-                        codeIncreaseVSpeed = newCodes[key];
-                        break;
-
-                    case LABEL_VSPDZERO:
-                        codeZeroVSpeed = newCodes[key];
-                        break;
-
-                    case LABEL_VSPDDEC:
-                        codeDecreaseVSpeed = newCodes[key];
-                        break;
-                }
-            }
-
-            saveControls();
+            ScreenMessages.PostScreenMessage(new ScreenMessage("Hover Climb Rate: " + verticalSpeed + "m/s", 1f, ScreenMessageStyle.UPPER_LEFT));
         }
         #endregion
 
@@ -821,6 +714,22 @@ namespace KerbalActuators
             if (vessel != FlightGlobals.ActiveVessel)
                 return;
             FindControllers(vessel);
+        }
+
+        void onControllerUpdatedVerticalSpeed(Part part, float speed)
+        {
+            if (part.vessel != FlightGlobals.ActiveVessel)
+                return;
+
+            verticalSpeed = speed;
+        }
+
+        void onControllerUpdatedHoverActive(Part part, bool isActive)
+        {
+            if (part.vessel != FlightGlobals.ActiveVessel)
+                return;
+
+            hoverActive = isActive;
         }
         #endregion
     }

@@ -25,14 +25,26 @@ namespace KerbalActuators
 
         public static WBIActuatorsGUIMgr Instance;
         List<IManagedActuatorWindow> managedWindows = new List<IManagedActuatorWindow>();
+        bool uiVisible = true;
 
         public void Awake()
         {
             Instance = this;
+            GameEvents.onHideUI.Add(onHideUI);
+            GameEvents.onShowUI.Add(onShowUI);
+        }
+
+        public void Destroy()
+        {
+            GameEvents.onHideUI.Remove(onHideUI);
+            GameEvents.onShowUI.Remove(onShowUI);
         }
 
         public void OnGUI()
         {
+            if (!uiVisible)
+                return;
+
             int totalWindows = managedWindows.Count;
             IManagedActuatorWindow managedWindow;
 
@@ -42,6 +54,16 @@ namespace KerbalActuators
                 if (managedWindow.IsVisible())
                     managedWindow.DrawWindow();
             }
+        }
+
+        public void onShowUI()
+        {
+            uiVisible = true;
+        }
+
+        public void onHideUI()
+        {
+            uiVisible = false;
         }
 
         public void RegisterWindow(IManagedActuatorWindow managedWindow)
