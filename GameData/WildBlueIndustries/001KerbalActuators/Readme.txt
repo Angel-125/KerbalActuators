@@ -24,6 +24,15 @@ Copy the contents of the mod's GameData directory into your GameData folder.
 
 ---REVISION HISORY---
 
+1.9.0
+- Hover GUI no longer appears when disabling the UI for screenshots.
+- Updated hover control keyboard bindings:
+CTRL + H: Toggle Hover
+Translate up: Increase vertical speed
+Translate down: Decrease vertical speed
+Brakes: kill vertical speed
+- Fixed sensitive hover keyboard controls for vertical speed.
+
 1.8.5
 - Grouped events into PAW groups.
 - Hover controls linked to axis action groups.
