@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -169,6 +170,13 @@ namespace KerbalActuators
             hoverGUI.vtolManager = this;
             hoverGUI.hoverSetupGUI.vtolManager = this;
 
+            StartCoroutine(GetActiveVesselNextFrame());
+        }
+
+        //FlightGlobals.ActiveVessel can trigger a FindObjectOfType call if fetch isn't cached yet, crashes if called too early during scene load
+        private IEnumerator GetActiveVesselNextFrame()
+        {
+            yield return null;
             this.vessel = FlightGlobals.ActiveVessel;
         }
 
