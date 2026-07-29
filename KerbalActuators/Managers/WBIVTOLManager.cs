@@ -180,7 +180,8 @@ namespace KerbalActuators
             this.vessel = FlightGlobals.ActiveVessel;
         }
 
-        public void Destroy()
+        //was named Destroy() before, which Unity never calls - GameEvents subscriptions were leaking on every scene change
+        public void OnDestroy()
         {
             GameEvents.onVesselLoaded.Remove(VesselWasLoaded);
             GameEvents.onVesselChange.Remove(VesselWasChanged);
