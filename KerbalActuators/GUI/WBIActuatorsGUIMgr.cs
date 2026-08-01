@@ -34,7 +34,7 @@ namespace KerbalActuators
             GameEvents.onShowUI.Add(onShowUI);
         }
 
-        public void Destroy()
+        public void OnDestroy()
         {
             GameEvents.onHideUI.Remove(onHideUI);
             GameEvents.onShowUI.Remove(onShowUI);

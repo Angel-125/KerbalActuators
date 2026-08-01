@@ -344,7 +344,7 @@ namespace KerbalActuators
         #endregion
 
         #region Helpers
-        public void Destroy()
+        public void OnDestroy()
         {
             GameEvents.onPartUndock.Remove(onPartUndock);
         }
